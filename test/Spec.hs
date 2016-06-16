@@ -12,8 +12,6 @@ dxParamChangeBytes = BL.pack
   [ 0xF0, 0x43, 0x10, 0x19, 0x4D, 0x00, 0xF7
   ]
 
-data Msg = Msg
-
 dxParamChangeMsg :: DxParamChange
 dxParamChangeMsg = DxParamChange
   { _dpcManf = 0x43
