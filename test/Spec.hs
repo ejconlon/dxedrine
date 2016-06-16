@@ -36,12 +36,6 @@ dx200BulkDumpMsg = Dx200BulkDump
   , _d2bdData = Word7 <$> [0x03, 0x00, 0x01, 0x0C, 0x32]
   }
 
-runGetOrError :: Get a -> BL.ByteString -> Either String a
-runGetOrError g bs =
-  case runGetOrFail g bs of
-    Left (_, _, s) -> Left s
-    Right (_, _, a) -> Right a
-
 decodes :: (Binary a, Eq a, Show a) => String -> BL.ByteString -> a -> TestTree
 decodes name bytes msg = testCase ("decodes " ++ name) $ do
   let decoded = runGetOrError get bytes

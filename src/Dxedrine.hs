@@ -131,6 +131,12 @@ getUntil g p = do
     go xs z | p z = return (xs, z)
             | otherwise = g >>= go (z:xs)
 
+runGetOrError :: Get a -> BL.ByteString -> Either String a
+runGetOrError g bs =
+  case runGetOrFail g bs of
+    Left (_, _, s) -> Left s
+    Right (_, _, a) -> Right a
+
 -- TODO
 makeDbdChecksum :: DxBulkDump -> Word7
 makeDbdChecksum m = Word7 0
@@ -230,8 +236,18 @@ instance Binary Dx200ParamChange where
       , _d2pcData = Word7 <$> dataa
       }
 
-  put dxbd = do
-    undefined
+  put m = do
+    putWord8 sysexStart
+    putWord7 $ _d2pcManf m
+    putWord8 $ unWord7 (_d2pcDevice m) .|. 0x10
+    putWord7 $ _d2pcModel m
+    let (addrHigh, addrMid, addrLow) = _d2pcAddr m
+    putWord7 addrHigh
+    putWord7 addrMid
+    putWord7 addrLow
+    let dataa = _d2pcData m
+    forM_ dataa putWord7
+    putWord8 sysexEnd
 
 instance Binary Dx200BulkDump where
   get = do
