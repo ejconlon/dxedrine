@@ -3,7 +3,7 @@ module Dxedrine
     ) where
 
 import Data.Binary
-import Data.Bytestring
+import Data.ByteString hiding (putStrLn)
 
 someFunc :: IO ()
 someFunc = putStrLn "someFunc"
