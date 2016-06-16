@@ -118,6 +118,19 @@ getN g i = do
   xs <- getN g (i - 1)
   return $ x : xs
 
+getUntil :: Get a -> (a -> Bool) -> Get ([a], a)
+getUntil g p = do
+  e <- isEmpty
+  if e
+    then (fail "empty")
+    else do
+      f <- g
+      (a, b) <- go [] f
+      return (reverse a, b)
+  where
+    go xs z | p z = return (xs, z)
+            | otherwise = g >>= go (z:xs)
+
 -- TODO
 makeDbdChecksum :: DxBulkDump -> Word7
 makeDbdChecksum m = Word7 0
@@ -198,7 +211,24 @@ instance Binary DxBulkDump where
 
 instance Binary Dx200ParamChange where
   get = do
-    undefined
+    start <- getWord8
+    unless (start == sysexStart) $ fail "no sysex start"
+    manf <- getWord7
+    deviceRaw <- getWord8
+    unless (deviceRaw .&. 0xF0 == 0x10) $ fail "device fails 0xF0 test"
+    model <- getWord7
+    addrHigh <- getWord7
+    addrMid <- getWord7
+    addrLow <- getWord7
+    (dataa, end) <- getUntil getWord8 $ \x -> x == sysexEnd
+    unless (end == sysexEnd) $ fail "no sysex end"
+    return Dx200ParamChange
+      { _d2pcManf = manf
+      , _d2pcDevice = Word7 $ deviceRaw .&. 0x0F
+      , _d2pcModel = model
+      , _d2pcAddr = (addrHigh, addrMid, addrLow)
+      , _d2pcData = Word7 <$> dataa
+      }
 
   put dxbd = do
     undefined
