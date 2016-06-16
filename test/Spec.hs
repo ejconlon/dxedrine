@@ -16,7 +16,7 @@ data Msg = Msg
 
 dxParamChangeMsg :: DxParamChange
 dxParamChangeMsg = DxParamChange
-  { _dpcManfId = 0x43
+  { _dpcManf = 0x43
   , _dpcDevice = 0x00
   , _dpcParamGroup = 0x19
   , _dpcParam = 0x4D
@@ -31,9 +31,9 @@ dx200BulkDumpBytes = BL.pack
 
 dx200BulkDumpMsg :: Dx200BulkDump
 dx200BulkDumpMsg = Dx200BulkDump
-  { _d2bdManfId = 0x43
+  { _d2bdManf = 0x43
   , _d2bdDevice = 0x00
-  , _d2bdModelId = 0x62
+  , _d2bdModel = 0x62
   , _d2bdAddr = (0x21, 0x7F, 0x00)
   , _d2bdData = [0x03, 0x00, 0x01, 0x0C, 0x32]
   }

@@ -9,7 +9,7 @@ import qualified Data.ByteString.Lazy as BL
 import Data.Word
 
 data DxParamChange = DxParamChange
-  { _dpcManfId :: Word8
+  { _dpcManf :: Word8
   , _dpcDevice :: Word8
   , _dpcParamGroup :: Word8
   , _dpcParam :: Word8
@@ -17,9 +17,9 @@ data DxParamChange = DxParamChange
   } deriving (Show, Eq)
 
 data Dx200BulkDump = Dx200BulkDump
-  { _d2bdManfId :: Word8
+  { _d2bdManf :: Word8
   , _d2bdDevice :: Word8
-  , _d2bdModelId :: Word8
+  , _d2bdModel :: Word8
   , _d2bdAddr :: (Word8, Word8, Word8)
   , _d2bdData :: [Word8]
   } deriving (Show, Eq)
@@ -30,20 +30,20 @@ sysexStart = 0xF0
 sysexEnd :: Word8
 sysexEnd = 0xF7
 
-yamahaMfrId :: Word8
-yamahaMfrId = 0x43
+yamahaManf :: Word8
+yamahaManf = 0x43
 
-system1ModelId :: Word8
-system1ModelId = 0x62
+system1Model :: Word8
+system1Model = 0x62
 
-system2ModelId :: Word8
-system2ModelId = 0x6D
+system2Model :: Word8
+system2Model = 0x6D
 
 instance Binary DxParamChange where
   get = do
     start <- getWord8
     unless (start == sysexStart) $ fail "must start with sysex start, 0xF0"
-    manfId <- getWord8
+    manf <- getWord8
     deviceRaw <- getWord8
     unless (deviceRaw .&. 0xF0 == 0x10) $ fail "device fails 0xF0 test"
     paramGroup <- getWord8
@@ -52,7 +52,7 @@ instance Binary DxParamChange where
     end <- getWord8
     unless (end == sysexEnd) $ fail "must end with sysex end, 0xF7"
     return DxParamChange
-      { _dpcManfId = manfId
+      { _dpcManf = manf
       , _dpcDevice = deviceRaw .&. 0x0F
       , _dpcParamGroup = paramGroup
       , _dpcParam = param
@@ -61,7 +61,7 @@ instance Binary DxParamChange where
 
   put dpc = do
     putWord8 sysexStart
-    putWord8 $ _dpcManfId dpc
+    putWord8 $ _dpcManf dpc
     putWord8 $ ((_dpcDevice dpc) .|. 0x10)
     putWord8 $ _dpcParamGroup dpc
     putWord8 $ _dpcParam dpc
@@ -89,10 +89,10 @@ instance Binary Dx200BulkDump where
   get = do
     start <- getWord8
     unless (start == sysexStart) $ fail "must start with sysex start, 0xF0"
-    manfId <- getWord8
+    manf <- getWord8
     deviceRaw <- getWord8
     unless (deviceRaw .&. 0xF0 == 0x00) $ fail "device fails 0xF0 test"
-    modelId <- getWord8
+    model <- getWord8
     count <- getWord16be
     addrHigh <- getWord8
     addrMid <- getWord8
@@ -103,18 +103,18 @@ instance Binary Dx200BulkDump where
     end <- getWord8
     unless (end == sysexEnd) $ fail "must end with sysex end, 0xF7"
     return Dx200BulkDump
-      { _d2bdManfId = manfId
+      { _d2bdManf = manf
       , _d2bdDevice = deviceRaw
-      , _d2bdModelId = modelId
+      , _d2bdModel = model
       , _d2bdAddr = (addrHigh, addrMid, addrLow)
       , _d2bdData = dataa
       }
 
   put d2bd = do
     putWord8 sysexStart
-    putWord8 $ _d2bdManfId d2bd
+    putWord8 $ _d2bdManf d2bd
     putWord8 $ _d2bdDevice d2bd
-    putWord8 $ _d2bdModelId d2bd
+    putWord8 $ _d2bdModel d2bd
     let dataa = _d2bdData d2bd
     let count = (fromIntegral (length dataa)) :: Word16
     putWord16be count
