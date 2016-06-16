@@ -76,7 +76,14 @@ getN g i = do
   return $ x : xs
 
 makeD2bdChecksum :: Dx200BulkDump -> Word8
-makeD2bdChecksum d2bd = 0
+makeD2bdChecksum d2bd =
+  let dataa = _d2bdData d2bd
+      count = (fromIntegral (length (dataa))) :: Word16
+      countMSB = (fromIntegral (count `shiftR` 8)) :: Word8
+      countLSB = (fromIntegral (count .&. 0x00FF)) :: Word8
+      (addrHigh, addrMid, addrLow) = _d2bdAddr d2bd
+      value = addrHigh + addrMid + addrLow + countMSB + countLSB + (sum dataa)
+  in ((0xFF `xor` value) + 1) .&. 0x7F
 
 instance Binary Dx200BulkDump where
   get = do

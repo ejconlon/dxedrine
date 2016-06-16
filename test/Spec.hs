@@ -52,7 +52,7 @@ decodes name bytes msg = testCase ("decodes " ++ name) $ do
 encodes :: Binary a => String -> BL.ByteString -> a -> TestTree
 encodes name bytes msg = testCase ("encodes " ++ name) $ do
   let encoded = runPut $ put msg
-  encoded @?= bytes
+  (BL.unpack encoded) @?= (BL.unpack bytes)
 
 parses :: (Binary a, Eq a, Show a) => String -> BL.ByteString -> a -> TestTree
 parses name bytes msg = testGroup ("parses " ++ name)
