@@ -1,4 +1,15 @@
 import Dxedrine
+import Test.Tasty
+
+dxParamChange :: [Word]
+dxParamChange = [0xF0, 0x43, 0x10, 0x19, 0x4D, 0x00, 0xF7]
+
+dx200NativeBulkDump :: [Word]
+dx200NativeBulkDump = [0xF0, 0x43, 0x00, 0x62, 0x00, 0x05, 0x21, 0x7F,
+                       0x00, 0x03, 0x00, 0x01, 0x0C, 0x32, 0x19, 0xF7]
+
+tests :: TestTree
+tests = testGroup "Tests" []
 
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main = defaultMain tests
