@@ -8,7 +8,9 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 dxParamChangeBytes :: BL.ByteString
-dxParamChangeBytes = BL.pack [0xF0, 0x43, 0x10, 0x19, 0x4D, 0x00, 0xF7]
+dxParamChangeBytes = BL.pack
+  [ 0xF0, 0x43, 0x10, 0x19, 0x4D, 0x00, 0xF7
+  ]
 
 data Msg = Msg
 
@@ -21,13 +23,20 @@ dxParamChangeMsg = DxParamChange
   , _dpcData = 0x00
   }
 
--- dx200NativeBulkDumpBytes :: BL.ByteString
--- dx200NativeBulkDumpBytes = BL.pack [
---   0xF0, 0x43, 0x00, 0x62, 0x00, 0x05, 0x21, 0x7F,
---   0x00, 0x03, 0x00, 0x01, 0x0C, 0x32, 0x19, 0xF7]
+dx200BulkDumpBytes :: BL.ByteString
+dx200BulkDumpBytes = BL.pack
+  [ 0xF0, 0x43, 0x00, 0x62, 0x00, 0x05, 0x21, 0x7F
+  , 0x00, 0x03, 0x00, 0x01, 0x0C, 0x32, 0x19, 0xF7
+  ]
 
--- dx200NativeBulkDumpMsg :: Msg
--- dx200NativeBulkDumpMsg = Msg
+dx200BulkDumpMsg :: Dx200BulkDump
+dx200BulkDumpMsg = Dx200BulkDump
+  { _d2bdManfId = 0x43
+  , _d2bdDevice = 0x00
+  , _d2bdModelId = 0x62
+  , _d2bdAddr = (0x21, 0x7F, 0x00)
+  , _d2bdData = [0x03, 0x00, 0x01, 0x0C, 0x32]
+  }
 
 runGetOrError :: Get a -> BL.ByteString -> Either String a
 runGetOrError g bs =
@@ -54,7 +63,7 @@ parses name bytes msg = testGroup ("parses " ++ name)
 tests :: TestTree
 tests = testGroup "Tests"
   [ parses "dx param change" dxParamChangeBytes dxParamChangeMsg
-  --, parses "dx200 native bulk dump" dx200NativeBulkDumpBytes dx200NativeBulkDumpMsg
+  , parses "dx200 native bulk dump" dx200BulkDumpBytes dx200BulkDumpMsg
   ]
 
 main :: IO ()

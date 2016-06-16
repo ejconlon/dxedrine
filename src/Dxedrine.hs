@@ -15,6 +15,14 @@ data DxParamChange = DxParamChange
   , _dpcData :: Word8
   } deriving (Show, Eq)
 
+data Dx200BulkDump = Dx200BulkDump
+  { _d2bdManfId :: Word8
+  , _d2bdDevice :: Word8
+  , _d2bdModelId :: Word8
+  , _d2bdAddr :: (Word8, Word8, Word8)
+  , _d2bdData :: [Word8]
+  } deriving (Show, Eq)
+
 sysexStart :: Word8
 sysexStart = 0xF0
 
@@ -58,6 +66,13 @@ instance Binary DxParamChange where
     putWord8 $ _dpcParam dpc
     putWord8 $ _dpcData dpc
     putWord8 sysexEnd
+
+instance Binary Dx200BulkDump where
+  get = do
+    undefined
+
+  put d2nbd = do
+    undefined
 
 someFunc :: IO ()
 someFunc = putStrLn "someFunc"
