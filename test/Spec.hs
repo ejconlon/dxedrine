@@ -14,11 +14,11 @@ dxParamChangeBytes = BL.pack
 
 dxParamChangeMsg :: DxParamChange
 dxParamChangeMsg = DxParamChange
-  { _dpcManf = 0x43
-  , _dpcDevice = 0x00
-  , _dpcParamGroup = 0x19
-  , _dpcParam = 0x4D
-  , _dpcData = 0x00
+  { _dpcManf = Word7 0x43
+  , _dpcDevice = Word7 0x00
+  , _dpcParamGroup = Word7 0x19
+  , _dpcParam = Word7 0x4D
+  , _dpcData = Word7 0x00
   }
 
 dx200BulkDumpBytes :: BL.ByteString
@@ -29,11 +29,11 @@ dx200BulkDumpBytes = BL.pack
 
 dx200BulkDumpMsg :: Dx200BulkDump
 dx200BulkDumpMsg = Dx200BulkDump
-  { _d2bdManf = 0x43
-  , _d2bdDevice = 0x00
-  , _d2bdModel = 0x62
-  , _d2bdAddr = (0x21, 0x7F, 0x00)
-  , _d2bdData = [0x03, 0x00, 0x01, 0x0C, 0x32]
+  { _d2bdManf = Word7 0x43
+  , _d2bdDevice = Word7 0x00
+  , _d2bdModel = Word7 0x62
+  , _d2bdAddr = (Word7 0x21, Word7 0x7F, Word7 0x00)
+  , _d2bdData = Word7 <$> [0x03, 0x00, 0x01, 0x0C, 0x32]
   }
 
 runGetOrError :: Get a -> BL.ByteString -> Either String a
