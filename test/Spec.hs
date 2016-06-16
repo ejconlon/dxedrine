@@ -1,5 +1,6 @@
 import Data.Binary
 import Data.Binary.Get
+import Data.Binary.Put
 import qualified Data.ByteString.Lazy as BL
 import Data.Word
 import Dxedrine
@@ -39,9 +40,10 @@ decodes name bytes msg = testCase ("decodes " ++ name) $ do
   let decoded = runGetOrError get bytes
   decoded @?= Right msg
 
-encodes :: (Binary a, Eq a, Show a) => String -> BL.ByteString -> a -> TestTree
+encodes :: Binary a => String -> BL.ByteString -> a -> TestTree
 encodes name bytes msg = testCase ("encodes " ++ name) $ do
-  return ()
+  let encoded = runPut $ put msg
+  encoded @?= bytes
 
 parses :: (Binary a, Eq a, Show a) => String -> BL.ByteString -> a -> TestTree
 parses name bytes msg = testGroup ("parses " ++ name)
