@@ -1,0 +1,9 @@
+*.swo
+*.swp
+*~
+*.pyc
+*.o
+*.tmp
+*.log
+*.bak
+
