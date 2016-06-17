@@ -52,9 +52,21 @@ parses name bytes msg = testGroup ("parses " ++ name)
   , encodes name bytes msg
   ]
 
+testGetN :: TestTree
+testGetN = testCase "getN" $
+  (runGetOrError (getN getWord8 3) (BL.pack [1,2,3,4])) @?= Right [1,2,3]
+
+testGetUntil :: TestTree
+testGetUntil = testCase "getUntil" $ do
+  (runGetOrError (getUntil getWord8 (== 3)) (BL.pack [])) @?= Left "empty"
+  (runGetOrError (getUntil getWord8 (== 3)) (BL.pack [1,2,3,4])) @?= Right ([1,2], 3)
+  (runGetOrError (getUntil getWord8 (== 3)) (BL.pack [1,2])) @?= Left "not enough bytes"
+
 tests :: TestTree
 tests = testGroup "Tests"
-  [ parses "dx param change" dxParamChangeBytes dxParamChangeMsg
+  [ testGetN
+  , testGetUntil
+  , parses "dx param change" dxParamChangeBytes dxParamChangeMsg
   , parses "dx200 native bulk dump" dx200BulkDumpBytes dx200BulkDumpMsg
   ]
 
