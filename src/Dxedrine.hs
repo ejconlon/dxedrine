@@ -2,6 +2,7 @@ module Dxedrine where
 
 import Control.Applicative ((<|>))
 import Control.Monad (forM_, unless)
+import Control.Monad.IO.Class (MonadIO(..))
 import Data.Binary
 import Data.Binary.Get
 import Data.Binary.Put
@@ -78,7 +79,27 @@ data DxUnion =
   | D2BD Dx200BulkDump
   deriving (Show, Eq)
 
-newtype DxUnionList = DxUnionList { unDxUnionList :: [DxUnion] } deriving (Show, Eq)
+newtype DxUnionList = DxUnionList
+  { unDxUnionList :: [DxUnion]
+  } deriving (Show, Eq)
+
+newtype ParseResult a = ParseResult
+  { unParseResult :: [(Either String a, ByteOffset)]
+  } deriving (Show, Eq)
+
+keepSuccessful :: ParseResult a -> [a]
+keepSuccessful (ParseResult rs) = do
+  (e, _) <- rs
+  case e of
+    Right a -> return a
+    _ -> mempty
+
+keepFailed :: ParseResult a -> [(String, ByteOffset)]
+keepFailed (ParseResult rs) = do
+  (e, o) <- rs
+  case e of
+    Left r -> return (r, o)
+    _ -> mempty
 
 sysexStart :: Word8
 sysexStart = 0xF0
@@ -119,14 +140,16 @@ putWord14 (Word14 (msb, lsb)) = do
 blIsEmpty :: BL.ByteString -> Bool
 blIsEmpty s = BL.uncons s == Nothing
 
-getRepeated :: Get a -> BL.ByteString -> [(Either String a, ByteOffset)]
-getRepeated g s =
-  if blIsEmpty s
-    then []
-    else
-      case runGetOrFail g s of
-        Left (t, o, s) -> (Left s, o) : getRepeated g t
-        Right (t, o, a) -> (Right a, o) : getRepeated g t
+getRepeated :: Get a -> BL.ByteString -> ParseResult a
+getRepeated g s = ParseResult (go s)
+  where
+    go u =
+      if blIsEmpty u
+        then []
+        else
+          case runGetOrFail g u of
+            Left (t, o, e) -> (Left e, o) : go t
+            Right (t, o, a) -> (Right a, o) : go t
 
 getN :: Get a -> Integer -> Get [a]
 getN _ 0 = return []
@@ -153,10 +176,7 @@ runGetOrError g bs =
 makeDbdChecksum :: DxBulkDump -> Word7
 makeDbdChecksum m =
   let dataa = _dbdData m
-      count = (fromIntegral (length (dataa))) :: Word16
-      countMSB = (fromIntegral (count `shiftR` 8)) :: Word8
-      countLSB = (fromIntegral (count .&. 0x00FF)) :: Word8
-      value = countMSB + countLSB + (sum (unWord7 <$> dataa))
+      value = sum (unWord7 <$> dataa)
   in Word7 $ ((0xFF `xor` value) + 1) .&. 0x7F
 
 makeD2bdChecksum :: Dx200BulkDump -> Word7
@@ -346,3 +366,7 @@ instance Binary DxUnionList where
 
   put (DxUnionList us) = forM_ us put
 
+parseDxUnions :: MonadIO m => m (ParseResult DxUnion)
+parseDxUnions = do
+  contents <- liftIO BL.getContents
+  return $ getRepeated get contents
