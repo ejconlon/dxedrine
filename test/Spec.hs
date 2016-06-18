@@ -2,6 +2,7 @@ import Data.Binary
 import Data.Binary.Get
 import Data.Binary.Put
 import qualified Data.ByteString.Lazy as BL
+import Data.Monoid
 import Data.Word
 import Dxedrine
 import Test.Tasty
@@ -65,6 +66,21 @@ dx200BulkDumpMsg = Dx200BulkDump
   , _d2bdData   = Word7 <$> [0x03, 0x00, 0x01, 0x0C, 0x32]
   }
 
+dxPackedBytes :: BL.ByteString
+dxPackedBytes =
+  dxParamChangeBytes <>
+  dxBulkDumpBytes <>
+  dx200ParamChangeBytes <>
+  dx200BulkDumpBytes
+
+dxPackedMsgs :: DxUnionList
+dxPackedMsgs = DxUnionList
+  [ DPC  dxParamChangeMsg
+  , DBD  dxBulkDumpMsg
+  , D2PC dx200ParamChangeMsg
+  , D2BD dx200BulkDumpMsg
+  ]
+
 decodes :: (Binary a, Eq a, Show a) => String -> BL.ByteString -> a -> TestTree
 decodes name bytes msg = testCase ("decodes " ++ name) $ do
   let decoded = runGetOrError get bytes
@@ -99,6 +115,11 @@ tests = testGroup "Tests"
   , parses "dx bulk dump" dxBulkDumpBytes dxBulkDumpMsg
   , parses "dx200 param change" dx200ParamChangeBytes dx200ParamChangeMsg
   , parses "dx200 native bulk dump" dx200BulkDumpBytes dx200BulkDumpMsg
+  , parses "union1" dxParamChangeBytes (DPC dxParamChangeMsg)
+  , parses "union2" dx200BulkDumpBytes (D2BD dx200BulkDumpMsg)
+  , parses "single" dxParamChangeBytes (DxUnionList [DPC dxParamChangeMsg])
+  , parses "another" dx200BulkDumpBytes (DxUnionList [D2BD dx200BulkDumpMsg])
+  , parses "packed" dxPackedBytes dxPackedMsgs
   ]
 
 main :: IO ()

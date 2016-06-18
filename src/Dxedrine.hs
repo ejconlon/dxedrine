@@ -83,6 +83,8 @@ data DxUnion =
   | D2BD Dx200BulkDump
   deriving (Show, Eq)
 
+newtype DxUnionList = DxUnionList { unDxUnionList :: [DxUnion] } deriving (Show, Eq)
+
 sysexStart :: Word8
 sysexStart = 0xF0
 
@@ -333,3 +335,15 @@ instance Binary DxUnion where
     DBD m  -> put m
     D2PC m -> put m
     D2BD m -> put m
+
+instance Binary DxUnionList where
+  get = DxUnionList . reverse <$> go []
+    where
+      go xs = do
+        e <- isEmpty
+        if e
+          then (return xs)
+          else (get >>= \x -> go (x : xs))
+
+  put (DxUnionList us) = forM_ us put
+
