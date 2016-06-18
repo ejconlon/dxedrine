@@ -7,7 +7,8 @@ data Range =
     IgnoreR Int
   | OneR Word8 Word8
   | TwoR Word8 Word8 Word8 Word8
-  | EnumR [Word8]
+  | EnumOneR [Word8]
+  | EnumTwoR [Word8] [Word8]
   deriving (Show, Eq)
 
 data Value =
@@ -165,8 +166,8 @@ multiply lim e = do
 
 voiceStepSeqEntries :: [Entry]
 voiceStepSeqEntries =
-  [ entry (EnumR [0x04, 0x06, 0x07]) (OneV 0x07) "stepSeqBaseUnit"
-  , entry (EnumR [0x08, 0x0C, 0x10]) (OneV 0x10) "stepSeqLength"
+  [ entry (EnumOneR [0x04, 0x06, 0x07]) (OneV 0x07) "stepSeqBaseUnit"
+  , entry (EnumOneR [0x08, 0x0C, 0x10]) (OneV 0x10) "stepSeqLength"
   , reserved 1
   , reserved 1
   , reserved 1
@@ -177,6 +178,32 @@ voiceStepSeqEntries =
     ++ multiply 16 (entry (OneR 0x00 0xF7) (OneV 0x00) "stepSeqControlChange")
     ++ multiply 16 (entry (OneR 0x00 0xF7) (OneV 0x00) "stepSeqGateTimeMsb")
     ++ multiply 16 (entry (OneR 0x00 0x01) (OneV 0x00) "stepSeqMute")
+
+effectEntries :: [Entry]
+effectEntries =
+  [ entry (EnumTwoR [0x00, 0x01, 0x02, 0x03] [0x00, 0x01, 0x02, 0x03]) (TwoV 0x00) "effectType"
+  , entry (OneR 0x00 0x7F) (OneV 0x00) "effectParameter"
+  ]
+
+partMixEntries :: [Entry]
+partMixEntries =
+  [ reserved 1
+  , reserved 1
+  , reserved 1
+  , reserved 1
+  , reserved 1
+  , entry (OneR 0x00 0x7F) (OneV 0x00) "volume"
+  , entry (OneR 0x00 0x7F) (OneV 0x00) "pan"
+  , entry (OneR 0x00 0x7F) (OneV 0x00) "effect1Send"
+  , reserved 1
+  , reserved 1
+  , entry (OneR 0x00 0x7F) (OneV 0x00) "filterCutoffFrequency"
+  , entry (OneR 0x00 0x7F) (OneV 0x00) "filterResonance"
+  , reserved 1
+  , reserved 1
+  , reserved 1
+  ]
+
 {-
 [ DX200 NATIVE PARAMETER CHANGE ]
 1) System1 parameter change
