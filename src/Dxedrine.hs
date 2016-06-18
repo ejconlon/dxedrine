@@ -1,5 +1,6 @@
 module Dxedrine where
 
+import Control.Applicative
 import Control.Monad (forM_, unless)
 import Data.Binary
 import Data.Binary.Get
@@ -57,7 +58,7 @@ data DxBulkDump = DxBulkDump
   , _dbdDevice :: Word7
   , _dbdFormat :: Word7
   , _dbdData :: [Word7]
-  }
+  } deriving (Show, Eq)
 
 data Dx200ParamChange = Dx200ParamChange
   { _d2pcManf :: Word7
@@ -65,7 +66,7 @@ data Dx200ParamChange = Dx200ParamChange
   , _d2pcModel :: Word7
   , _d2pcAddr :: (Word7, Word7, Word7)
   , _d2pcData :: [Word7]
-  }
+  } deriving (Show, Eq)
 
 data Dx200BulkDump = Dx200BulkDump
   { _d2bdManf :: Word7
@@ -74,6 +75,13 @@ data Dx200BulkDump = Dx200BulkDump
   , _d2bdAddr :: (Word7, Word7, Word7)
   , _d2bdData :: [Word7]
   } deriving (Show, Eq)
+
+data DxUnion =
+    DPC  DxParamChange
+  | DBD  DxBulkDump
+  | D2PC Dx200ParamChange
+  | D2BD Dx200BulkDump
+  deriving (Show, Eq)
 
 sysexStart :: Word8
 sysexStart = 0xF0
@@ -111,6 +119,18 @@ putWord14 (Word14 (msb, lsb)) = do
   putWord7 msb
   putWord7 lsb
 
+blIsEmpty :: BL.ByteString -> Bool
+blIsEmpty s = BL.uncons s == Nothing
+
+getRepeated :: Get a -> BL.ByteString -> [(Either String a, ByteOffset)]
+getRepeated g s =
+  if blIsEmpty s
+    then []
+    else
+      case runGetOrFail g s of
+        Left (t, o, s) -> (Left s, o) : getRepeated g t
+        Right (t, o, a) -> (Right a, o) : getRepeated g t
+
 getN :: Get a -> Integer -> Get [a]
 getN _ 0 = return []
 getN g i = do
@@ -120,13 +140,9 @@ getN g i = do
 
 getUntil :: Get a -> (a -> Bool) -> Get ([a], a)
 getUntil g p = do
-  e <- isEmpty
-  if e
-    then (fail "empty")
-    else do
-      f <- g
-      (a, b) <- go [] f
-      return (reverse a, b)
+  f <- g
+  (a, b) <- go [] f
+  return (reverse a, b)
   where
     go xs z | p z = return (xs, z)
             | otherwise = g >>= go (z:xs)
@@ -137,9 +153,14 @@ runGetOrError g bs =
     Left (_, _, s) -> Left s
     Right (_, _, a) -> Right a
 
--- TODO
 makeDbdChecksum :: DxBulkDump -> Word7
-makeDbdChecksum m = Word7 0
+makeDbdChecksum m =
+  let dataa = _dbdData m
+      count = (fromIntegral (length (dataa))) :: Word16
+      countMSB = (fromIntegral (count `shiftR` 8)) :: Word8
+      countLSB = (fromIntegral (count .&. 0x00FF)) :: Word8
+      value = countMSB + countLSB + (sum (unWord7 <$> dataa))
+  in Word7 $ ((0xFF `xor` value) + 1) .&. 0x7F
 
 makeD2bdChecksum :: Dx200BulkDump -> Word7
 makeD2bdChecksum m =
@@ -194,15 +215,21 @@ instance Binary DxBulkDump where
     count <- getWord14
     dataa <- getN getWord7 $ word14ToInteger count
     checksum <- getWord7
-    -- TODO check checksum
     end <- getWord8
     unless (end == sysexEnd) $ fail "no sysex end"
-    return DxBulkDump
-      { _dbdManf = manf
-      , _dbdDevice = Word7 deviceRaw
-      , _dbdFormat = format
-      , _dbdData = dataa
-      }
+    let m = DxBulkDump
+            { _dbdManf = manf
+            , _dbdDevice = Word7 deviceRaw
+            , _dbdFormat = format
+            , _dbdData = dataa
+            }
+        checkChecksum = makeDbdChecksum m
+    if (checksum == checkChecksum)
+      then (return m)
+      else (fail ("failed checksum: expected " ++
+                  (show checksum) ++
+                  " but was " ++
+                  (show checkChecksum)))
 
   put m = do
     putWord8 sysexStart
@@ -263,16 +290,22 @@ instance Binary Dx200BulkDump where
     addrLow <- getWord7
     dataa <- getN getWord7 $ word14ToInteger count
     checksum <- getWord7
-    -- TODO check checksum
     end <- getWord8
     unless (end == sysexEnd) $ fail "no sysex end"
-    return Dx200BulkDump
-      { _d2bdManf = manf
-      , _d2bdDevice = Word7 $ deviceRaw
-      , _d2bdModel = model
-      , _d2bdAddr = (addrHigh, addrMid, addrLow)
-      , _d2bdData = dataa
-      }
+    let m = Dx200BulkDump
+            { _d2bdManf = manf
+            , _d2bdDevice = Word7 $ deviceRaw
+            , _d2bdModel = model
+            , _d2bdAddr = (addrHigh, addrMid, addrLow)
+            , _d2bdData = dataa
+            }
+        checkChecksum = makeD2bdChecksum m
+    if (checksum == checkChecksum)
+      then (return m)
+      else (fail ("failed checksum: expected " ++
+                  (show checksum) ++
+                  " but was " ++
+                  (show checkChecksum)))
 
   put m = do
     putWord8 sysexStart
@@ -289,19 +322,14 @@ instance Binary Dx200BulkDump where
     putWord7 $ makeD2bdChecksum m
     putWord8 sysexEnd
 
-blIsEmpty :: BL.ByteString -> Bool
-blIsEmpty s = BL.uncons s == Nothing
+instance Binary DxUnion where
+  get = (DPC  <$> get)
+    <|> (DBD  <$> get)
+    <|> (D2PC <$> get)
+    <|> (D2BD <$> get)
 
-getRepeated :: Get a -> BL.ByteString -> [a]
-getRepeated g s =
-  if blIsEmpty s
-    then []
-    else
-      case runGetOrFail g s of
-        Left (t, _, _) -> getRepeated g t
-        Right (t, _, a) -> a : getRepeated g t
-
---getFramed :: Word8 -> Word8 -> Get a -> Get [BL.ByteString]
-
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+  put m = case m of
+    DPC m  -> put m
+    DBD m  -> put m
+    D2PC m -> put m
+    D2BD m -> put m

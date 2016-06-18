@@ -58,7 +58,7 @@ testGetN = testCase "getN" $
 
 testGetUntil :: TestTree
 testGetUntil = testCase "getUntil" $ do
-  (runGetOrError (getUntil getWord8 (== 3)) (BL.pack [])) @?= Left "empty"
+  (runGetOrError (getUntil getWord8 (== 3)) (BL.pack [])) @?= Left "not enough bytes"
   (runGetOrError (getUntil getWord8 (== 3)) (BL.pack [1,2,3,4])) @?= Right ([1,2], 3)
   (runGetOrError (getUntil getWord8 (== 3)) (BL.pack [1,2])) @?= Left "not enough bytes"
 

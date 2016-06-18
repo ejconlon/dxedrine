@@ -3,4 +3,4 @@ module Main where
 import Dxedrine
 
 main :: IO ()
-main = someFunc
+main = putStrLn "hello, world"
