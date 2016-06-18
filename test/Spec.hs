@@ -46,7 +46,7 @@ dx200ParamChangeMsg = Dx200ParamChange
   { _d2pcManf   = Word7 0x43
   , _d2pcDevice = Word7 0x00
   , _d2pcModel  = Word7 0x62
-  , _d2pcAddr   = (Word7 0x21, Word7 0x7F, Word7 0x00)
+  , _d2pcAddr   = Address (Word7 0x21, Word7 0x7F, Word7 0x00)
   , _d2pcData   = Word7 <$> [0x03, 0x00, 0x01, 0x0C, 0x32]
   }
 
@@ -61,7 +61,7 @@ dx200BulkDumpMsg = Dx200BulkDump
   { _d2bdManf   = Word7 0x43
   , _d2bdDevice = Word7 0x00
   , _d2bdModel  = Word7 0x62
-  , _d2bdAddr   = (Word7 0x21, Word7 0x7F, Word7 0x00)
+  , _d2bdAddr   = Address (Word7 0x21, Word7 0x7F, Word7 0x00)
   , _d2bdData   = Word7 <$> [0x03, 0x00, 0x01, 0x0C, 0x32]
   }
 

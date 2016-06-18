@@ -42,6 +42,10 @@ word14ToInteger (Word14 (Word7 msb8, Word7 lsb8)) =
       w16 = (msb16 `shiftL` 7) .|. lsb16
   in toInteger w16
 
+newtype Address = Address
+  { unAddress :: (Word7, Word7, Word7)
+  } deriving (Show, Eq)
+
 data DxParamChange = DxParamChange
   { _dpcManf :: Word7
   , _dpcDevice :: Word7
@@ -61,7 +65,7 @@ data Dx200ParamChange = Dx200ParamChange
   { _d2pcManf :: Word7
   , _d2pcDevice :: Word7
   , _d2pcModel :: Word7
-  , _d2pcAddr :: (Word7, Word7, Word7)
+  , _d2pcAddr :: Address
   , _d2pcData :: [Word7]
   } deriving (Show, Eq)
 
@@ -69,7 +73,7 @@ data Dx200BulkDump = Dx200BulkDump
   { _d2bdManf :: Word7
   , _d2bdDevice :: Word7
   , _d2bdModel :: Word7
-  , _d2bdAddr :: (Word7, Word7, Word7)
+  , _d2bdAddr :: Address
   , _d2bdData :: [Word7]
   } deriving (Show, Eq)
 
@@ -192,7 +196,7 @@ makeD2bdChecksum m =
       count = fromMaybe (Word14 (Word7 0, Word7 0)) $ word14FromIntegral (length dataa)
       countMSB = unWord7 (fst (unWord14 count))
       countLSB = unWord7 (snd (unWord14 count))
-      (addrHigh, addrMid, addrLow) = _d2bdAddr m
+      (addrHigh, addrMid, addrLow) = unAddress $ _d2bdAddr m
       value = unWord7 addrHigh +
               unWord7 addrMid +
               unWord7 addrLow +
@@ -285,7 +289,7 @@ instance Binary Dx200ParamChange where
       { _d2pcManf = manf
       , _d2pcDevice = Word7 $ deviceRaw .&. 0x0F
       , _d2pcModel = model
-      , _d2pcAddr = (addrHigh, addrMid, addrLow)
+      , _d2pcAddr = Address (addrHigh, addrMid, addrLow)
       , _d2pcData = Word7 <$> dataa
       }
 
@@ -294,7 +298,7 @@ instance Binary Dx200ParamChange where
     putWord7 $ _d2pcManf m
     putWord8 $ unWord7 (_d2pcDevice m) .|. 0x10
     putWord7 $ _d2pcModel m
-    let (addrHigh, addrMid, addrLow) = _d2pcAddr m
+    let (addrHigh, addrMid, addrLow) = unAddress $ _d2pcAddr m
     putWord7 addrHigh
     putWord7 addrMid
     putWord7 addrLow
@@ -322,7 +326,7 @@ instance Binary Dx200BulkDump where
             { _d2bdManf = manf
             , _d2bdDevice = Word7 deviceRaw
             , _d2bdModel = model
-            , _d2bdAddr = (addrHigh, addrMid, addrLow)
+            , _d2bdAddr = Address (addrHigh, addrMid, addrLow)
             , _d2bdData = dataa
             }
         checkChecksum = makeD2bdChecksum m
@@ -342,7 +346,7 @@ instance Binary Dx200BulkDump where
     case word14FromIntegral (length dataa) of
       Just count -> putWord14 count
       Nothing -> fail "data too long"
-    let (addrHigh, addrMid, addrLow) = _d2bdAddr m
+    let (addrHigh, addrMid, addrLow) = unAddress $ _d2bdAddr m
     putWord7 addrHigh
     putWord7 addrMid
     putWord7 addrLow
