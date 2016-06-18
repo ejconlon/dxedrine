@@ -12,7 +12,7 @@ data Range =
 data Value =
     IgnoreV
   | OneV Word8
-  | TwoV Word8 Word8
+  | TwoV Word16
   deriving (Show, Eq)
 
 data Entry = Entry
@@ -50,9 +50,9 @@ system2Block = Block
     ]
   }
 
-currentCommonVoice1Block :: Block
-currentCommonVoice1Block = Block
-  { _blockName = "currentCommonVoice1"
+voiceCommon1Block :: Block
+voiceCommon1Block = Block
+  { _blockName = "voiceCommon1"
   , _blockAddress = mkAddress 0x10 0x00 0x00
   , _blockEntries =
     [ entry (OneR 0x00 0x01) (OneV 0x01) "distortionOffOn"
@@ -96,6 +96,54 @@ currentCommonVoice1Block = Block
     , entry (OneR 0x00 0x7F) (OneV 0x40) "aegDecay"
     , entry (OneR 0x00 0x7F) (OneV 0x40) "aegSustain"
     , entry (OneR 0x00 0x7F) (OneV 0x40) "aegRelease"
+    ]
+  }
+
+voiceCommon2Block :: Block
+voiceCommon2Block = Block
+  { _blockName = "voiceCommon2"
+  , _blockAddress = mkAddress 0x10 0x01 0x00
+  , _blockEntries =
+    [ entry (OneR 0x00 0x03) (OneV 0x03) "modulatorSelect"
+    , entry (OneR 0x00 0x03) (OneV 0x00) "sceneControl"
+    , entry (TwoR 0x00 0x4A 0x00 0x7F) (TwoV 0x8C) "commonTempo"
+    , entry (OneR 0x32 0x53) (OneV 0x32) "playEffectSwing"
+    ]
+  }
+
+voiceSceneBlock :: Block
+voiceSceneBlock = Block
+  { _blockName = "voiceScene"
+  , _blockAddress = mkAddress 0x10 0x03 0x00
+  , _blockEntries =
+    [ entry (OneR 0x00 0x7F) (OneV 0x7F) "filterCutoff"
+    , entry (OneR 0x00 0x74) (OneV 0x10) "filterResonance"
+    , entry (OneR 0x00 0x7F) (OneV 0x00) "fegAttack"
+    , entry (OneR 0x00 0x7F) (OneV 0x00) "fegDecay"
+    , entry (OneR 0x00 0x7F) (OneV 0x00) "fegSustain"
+    , entry (OneR 0x00 0x7F) (OneV 0x00) "fegRelease"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "fegDepth"
+    , entry (OneR 0x00 0x05) (OneV 0x00) "filterType"
+    , entry (OneR 0x00 0x63) (OneV 0x00) "lfoSpeed"
+    , entry (OneR 0x00 0x63) (OneV 0x00) "portamentoTime"
+    , entry (OneR 0x00 0x7F) (OneV 0x00) "mixerNoiseLevel"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "modulator1Harmonic"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "modulator2Harmonic"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "modulator3Harmonic"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "modulator1FmDepth"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "modulator2FmDepth"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "modulator3FmDepth"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "modulator1EgDecay"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "modulator2EgDecay"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "modulator3EgDecay"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "aegAttack"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "aegDecay"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "aegSustain"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "aegRelease"
+    , entry (OneR 0x00 0x7F) (OneV 0x64) "volume"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "pan"
+    , entry (OneR 0x00 0x7F) (OneV 0x00) "effectSend"
+    , entry (OneR 0x00 0x7F) (OneV 0x00) "effectParameter"
     ]
   }
 
