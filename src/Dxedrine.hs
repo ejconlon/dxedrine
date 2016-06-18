@@ -46,6 +46,13 @@ newtype Address = Address
   { unAddress :: (Word7, Word7, Word7)
   } deriving (Show, Eq)
 
+mkAddress :: Word8 -> Word8 -> Word8 -> Address
+mkAddress i8 j8 k8 = fromMaybe undefined $ do
+  i7 <- word7FromIntegral $ 0x7F .&. i8
+  j7 <- word7FromIntegral $ 0x7F .&. j8
+  k7 <- word7FromIntegral $ 0x7F .&. k8
+  return $ Address (i7, j7, k7)
+
 data DxParamChange = DxParamChange
   { _dpcManf :: Word7
   , _dpcDevice :: Word7

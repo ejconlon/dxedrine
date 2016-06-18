@@ -1,10 +1,11 @@
 module TwoHundo where
 
+import Data.Word
 import Dxedrine
 
 data DataType =
-    IsWord7
-  | IsWord14
+    IsWord7 Word8 Word8
+  | IsWord14 Word8 Word8 Word8 Word8
   deriving (Show, Eq)
 
 data Entry = Entry
@@ -14,8 +15,41 @@ data Entry = Entry
 
 data Block = Block
   { _blockAddress :: Address
-  , _blockEntries :: [Entry]
+  , _blockEntries :: [Maybe Entry]
   } deriving (Show, Eq)
+
+system2Block :: Block
+system2Block = Block
+  { _blockAddress = mkAddress 0x00 0x00 0x07
+  , _blockEntries =
+    [ Nothing
+    , Just Entry
+      { _entryName = "Velocity Curve"
+      , _entryDataType = IsWord7 0x00 0x06
+      }
+    , Nothing
+    , Nothing
+    , Nothing
+    , Nothing
+    , Nothing
+    , Just Entry
+      { _entryName = "32 Bulk Receive Block"
+      , _entryDataType = IsWord7 0x00 0x03
+      }
+    , Nothing
+    ]
+  }
+
+currentVoiceCommon1 :: Block
+currentVoiceCommon1 = Block
+  { _blockAddress = mkAddress 0x10 0x00 0x00
+  , _blockEntries =
+    [ Just Entry
+      { _entryName = "Distortion: Off/On"
+      , _entryDataType = IsWord7 0x00 0x01
+      }
+    ]
+  }
 
 {-
 [ DX200 NATIVE PARAMETER CHANGE ]
