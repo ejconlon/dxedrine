@@ -140,8 +140,14 @@ putWord14 (Word14 (msb, lsb)) = do
 blIsEmpty :: BL.ByteString -> Bool
 blIsEmpty s = BL.uncons s == Nothing
 
+adjust :: [(x, ByteOffset)] -> [(x, ByteOffset)]
+adjust xs = go 0 xs
+  where
+    go _ [] = []
+    go i ((z, o):ys) = let j = o + i in (z, j):(go j ys)
+
 getRepeated :: Get a -> BL.ByteString -> ParseResult a
-getRepeated g s = ParseResult (go s)
+getRepeated g s = ParseResult (adjust (go s))
   where
     go u =
       if blIsEmpty u
@@ -183,8 +189,8 @@ makeD2bdChecksum :: Dx200BulkDump -> Word7
 makeD2bdChecksum m =
   let dataa = _d2bdData m
       count = (fromIntegral (length (dataa))) :: Word16
-      countMSB = (fromIntegral (count `shiftR` 8)) :: Word8
-      countLSB = (fromIntegral (count .&. 0x00FF)) :: Word8
+      countMSB = (fromIntegral (count `shiftR` 7)) :: Word8
+      countLSB = (fromIntegral (count .&. 0x007F)) :: Word8
       (addrHigh, addrMid, addrLow) = _d2bdAddr m
       value = (unWord7 addrHigh) +
               (unWord7 addrMid) +
