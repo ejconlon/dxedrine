@@ -88,7 +88,7 @@ decodes name bytes msg = testCase ("decodes " ++ name) $ do
 encodes :: Binary a => String -> BL.ByteString -> a -> TestTree
 encodes name bytes msg = testCase ("encodes " ++ name) $ do
   let encoded = runPut $ put msg
-  (BL.unpack encoded) @?= (BL.unpack bytes)
+  BL.unpack encoded @?= BL.unpack bytes
 
 parses :: (Binary a, Eq a, Show a) => String -> BL.ByteString -> a -> TestTree
 parses name bytes msg = testGroup ("parses " ++ name)
@@ -98,13 +98,13 @@ parses name bytes msg = testGroup ("parses " ++ name)
 
 testGetN :: TestTree
 testGetN = testCase "getN" $
-  (runGetOrError (getN getWord8 3) (BL.pack [1,2,3,4])) @?= Right [1,2,3]
+  runGetOrError (getN getWord8 3) (BL.pack [1,2,3,4]) @?= Right [1,2,3]
 
 testGetUntil :: TestTree
 testGetUntil = testCase "getUntil" $ do
-  (runGetOrError (getUntil getWord8 (== 3)) (BL.pack [])) @?= Left "not enough bytes"
-  (runGetOrError (getUntil getWord8 (== 3)) (BL.pack [1,2,3,4])) @?= Right ([1,2], 3)
-  (runGetOrError (getUntil getWord8 (== 3)) (BL.pack [1,2])) @?= Left "not enough bytes"
+  runGetOrError (getUntil getWord8 (== 3)) (BL.pack []) @?= Left "not enough bytes"
+  runGetOrError (getUntil getWord8 (== 3)) (BL.pack [1,2,3,4]) @?= Right ([1,2], 3)
+  runGetOrError (getUntil getWord8 (== 3)) (BL.pack [1,2]) @?= Left "not enough bytes"
 
 tests :: TestTree
 tests = testGroup "Tests"

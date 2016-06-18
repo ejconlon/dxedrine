@@ -8,6 +8,7 @@ import Data.Binary.Get
 import Data.Binary.Put
 import Data.Bits ((.|.), (.&.), shiftL, shiftR, xor)
 import qualified Data.ByteString.Lazy as BL
+import Data.Maybe (fromMaybe, isNothing)
 import Data.Word (Word8(..), Word16(..))
 
 newtype Word7 = Word7 { unWord7 :: Word8 } deriving (Show, Eq)
@@ -27,8 +28,8 @@ newtype Word14 = Word14 { unWord14 :: (Word7, Word7) } deriving (Show, Eq)
 word14FromIntegral :: Integral a => a -> Maybe Word14
 word14FromIntegral i =
   let w16 = fromIntegral i :: Word16
-      msb8 = (fromIntegral (w16 `shiftR` 7)) :: Word8
-      lsb8 = (fromIntegral (w16 .&. 0x007F)) :: Word8
+      msb8 = fromIntegral (w16 `shiftR` 7) :: Word8
+      lsb8 = fromIntegral (w16 .&. 0x007F) :: Word8
   in do
     msb <- word7FromIntegral msb8
     lsb <- word7FromIntegral lsb8
@@ -119,9 +120,9 @@ system2Model = Word7 0x6D
 getWord7 :: Get Word7
 getWord7 = do
   x <- getWord8
-  if (x .&. 0x80 == 0)
-    then (return $ Word7 x)
-    else (fail $ "Not a Word7: " ++ (show x))
+  if x .&. 0x80 == 0
+    then return $ Word7 x
+    else fail $ "Not a Word7: " ++ show x
 
 putWord7 :: Word7 -> Put
 putWord7 (Word7 w8) = putWord8 $ 0x7F .&. w8
@@ -138,13 +139,13 @@ putWord14 (Word14 (msb, lsb)) = do
   putWord7 lsb
 
 blIsEmpty :: BL.ByteString -> Bool
-blIsEmpty s = BL.uncons s == Nothing
+blIsEmpty s = isNothing $ BL.uncons s
 
 adjust :: [(x, ByteOffset)] -> [(x, ByteOffset)]
-adjust xs = go 0 xs
+adjust = go 0
   where
     go _ [] = []
-    go i ((z, o):ys) = let j = o + i in (z, j):(go j ys)
+    go i ((z, o):ys) = let j = o + i in (z, j) : go j ys
 
 getRepeated :: Get a -> BL.ByteString -> ParseResult a
 getRepeated g s = ParseResult (adjust (go s))
@@ -188,14 +189,14 @@ makeDbdChecksum m =
 makeD2bdChecksum :: Dx200BulkDump -> Word7
 makeD2bdChecksum m =
   let dataa = _d2bdData m
-      count = maybe (Word14 (Word7 0, Word7 0)) id $ word14FromIntegral (length (dataa))
+      count = fromMaybe (Word14 (Word7 0, Word7 0)) $ word14FromIntegral (length dataa)
       countMSB = unWord7 (fst (unWord14 count))
       countLSB = unWord7 (snd (unWord14 count))
       (addrHigh, addrMid, addrLow) = _d2bdAddr m
-      value = (unWord7 addrHigh) +
-              (unWord7 addrMid) +
-              (unWord7 addrLow) +
-              countMSB + countLSB + (sum (unWord7 <$> dataa))
+      value = unWord7 addrHigh +
+              unWord7 addrMid +
+              unWord7 addrLow +
+              countMSB + countLSB + sum (unWord7 <$> dataa)
   in Word7 $ ((0xFF `xor` value) + 1) .&. 0x7F
 
 instance Binary DxParamChange where
@@ -221,7 +222,7 @@ instance Binary DxParamChange where
   put m = do
     putWord8 sysexStart
     putWord7 $ _dpcManf m
-    putWord8 $ (unWord7 (_dpcDevice m)) .|. 0x10
+    putWord8 $ unWord7 (_dpcDevice m) .|. 0x10
     putWord7 $ _dpcParamGroup m
     putWord7 $ _dpcParam m
     putWord7 $ _dpcData m
@@ -247,12 +248,12 @@ instance Binary DxBulkDump where
             , _dbdData = dataa
             }
         checkChecksum = makeDbdChecksum m
-    if (checksum == checkChecksum)
-      then (return m)
-      else (fail ("failed checksum: expected " ++
-                  (show checksum) ++
-                  " but was " ++
-                  (show checkChecksum)))
+    if checksum == checkChecksum
+      then return m
+      else fail ("failed checksum: expected " ++
+                 show checksum ++
+                 " but was " ++
+                 show checkChecksum)
 
   put m = do
     putWord8 sysexStart
@@ -260,7 +261,7 @@ instance Binary DxBulkDump where
     putWord7 $ _dbdDevice m
     putWord7 $ _dbdFormat m
     let dataa = _dbdData m
-    case (word14FromIntegral $ length dataa) of
+    case word14FromIntegral (length dataa) of
       Just count -> putWord14 count
       Nothing -> fail "data loo long"
     forM_ dataa putWord7
@@ -319,18 +320,18 @@ instance Binary Dx200BulkDump where
     unless (end == sysexEnd) $ fail "no sysex end"
     let m = Dx200BulkDump
             { _d2bdManf = manf
-            , _d2bdDevice = Word7 $ deviceRaw
+            , _d2bdDevice = Word7 deviceRaw
             , _d2bdModel = model
             , _d2bdAddr = (addrHigh, addrMid, addrLow)
             , _d2bdData = dataa
             }
         checkChecksum = makeD2bdChecksum m
-    if (checksum == checkChecksum)
-      then (return m)
-      else (fail ("failed checksum: expected " ++
-                  (show checksum) ++
-                  " but was " ++
-                  (show checkChecksum)))
+    if checksum == checkChecksum
+      then return m
+      else fail ("failed checksum: expected " ++
+                 show checksum ++
+                 " but was " ++
+                 show checkChecksum)
 
   put m = do
     putWord8 sysexStart
@@ -338,7 +339,7 @@ instance Binary Dx200BulkDump where
     putWord7 $ _d2bdDevice m
     putWord7 $ _d2bdModel m
     let dataa = _d2bdData m
-    case (word14FromIntegral $ length dataa) of
+    case word14FromIntegral (length dataa) of
       Just count -> putWord14 count
       Nothing -> fail "data too long"
     let (addrHigh, addrMid, addrLow) = _d2bdAddr m
@@ -367,8 +368,8 @@ instance Binary DxUnionList where
       go xs = do
         e <- isEmpty
         if e
-          then (return xs)
-          else (get >>= \x -> go (x : xs))
+          then return xs
+          else get >>= \x -> go (x : xs)
 
   put (DxUnionList us) = forM_ us put
 
