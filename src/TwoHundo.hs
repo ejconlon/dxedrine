@@ -1,5 +1,6 @@
 module TwoHundo where
 
+import Data.Bits ((.&.))
 import Data.Word
 import Dxedrine
 
@@ -30,7 +31,7 @@ data Block = Block
   } deriving (Show, Eq)
 
 reserved :: Int -> Entry
-reserved i = Entry "reserved" (IgnoreR i) (IgnoreV)
+reserved i = Entry "reserved" (IgnoreR i) IgnoreV
 
 entry :: Range -> Value -> String -> Entry
 entry range value name = Entry name range value
@@ -158,7 +159,7 @@ voiceFreeEgEntries =
 multiply :: Int -> Entry -> [Entry]
 multiply lim e = do
   i <- [1 .. lim]
-  return $ e { _entryName = (_entryName e) ++ show i }
+  return $ e { _entryName = _entryName e ++ show i }
 
 voiceStepSeqEntries :: [Entry]
 voiceStepSeqEntries =
@@ -211,6 +212,51 @@ songEntries =
   , entry (EnumR [0x00, 0x01, 0x7F]) (OneV 0x00) "loopType"
   , entry (MultiR (OneR 0x00 0x0F) (EnumR [0x7F])) (OneV 0x00) "trackMute"
   ]
+
+
+data Context = Context
+  { _contextSong :: Maybe Word8
+  , _contextMeasure :: Maybe Word16
+  , _contextPart :: Maybe Word8
+  , _contextPattern :: Maybe Word8
+  }
+
+emptyContext :: Context
+emptyContext = Context Nothing Nothing Nothing Nothing
+
+match62 :: Word8 -> Maybe [Entry]
+match62 0x20 = Just voiceCommon1Entries
+match62 0x21 = Just voiceCommon2Entries
+match62 i | i == 0x40 || i == 0x41 = Just voiceSceneEntries
+match62 i | i >= 0x30 && i < 0x40 = Just voiceFreeEgEntries
+match62 0x50 = Just voiceStepSeqEntries
+match62 _ = Nothing
+
+match6D :: Word8 -> Word8 -> Maybe (Context, [Entry])
+match6D i j | i >= 0x20 && i < 0x30 =
+  Just (emptyContext { _contextPart = Just (i .&. 0x0F), _contextPattern = Just j }, rhythmStepSeqEntries)
+match6D i j | i == 0x30 =
+  Just (emptyContext { _contextPattern = Just j }, effectEntries)
+match6D i j | i >= 0x30 && i < 0x50 =
+  Just (emptyContext { _contextPart = Just (i .&. 0x0F), _contextPattern = Just j }, partMixEntries)
+match6D i j | i >= 0x60 && i < 0x70 =
+  Just (emptyContext { _contextSong = Just (i .&. 0x0F), _contextMeasure = Just (fromIntegral j :: Word16) }, songEntries)
+match6D i j | i >= 0x70 && i < 0x80 =
+  Just (emptyContext { _contextSong = Just (i .&. 0x0F), _contextMeasure = Just ((fromIntegral j :: Word16) + 0x7F) }, songEntries)
+match6D _ _ = Nothing
+
+getEntries :: Word7 -> Address -> Maybe (Context, [Entry])
+getEntries modelId address =
+  case low8 of
+    0 -> Nothing
+    _ ->
+      case model8 of
+        0x62 -> match62 hi8 >>= (\es -> Just (emptyContext, es))
+        0x6D -> match6D hi8 mid8
+        _ -> Nothing
+  where
+    Address (Word7 hi8, Word7 mid8, Word7 low8) = address
+    (Word7 model8) = modelId
 
 {-
 [ DX200 NATIVE PARAMETER CHANGE ]
