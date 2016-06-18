@@ -4,8 +4,9 @@ import Data.Word
 import Dxedrine
 
 data DataType =
-    IsWord7 Word8 Word8
-  | IsWord14 Word8 Word8 Word8 Word8
+    Ignore Int
+  | One Word8 Word8
+  | Two Word8 Word8 Word8 Word8
   deriving (Show, Eq)
 
 data Entry = Entry
@@ -14,40 +15,80 @@ data Entry = Entry
   } deriving (Show, Eq)
 
 data Block = Block
-  { _blockAddress :: Address
-  , _blockEntries :: [Maybe Entry]
+  { _blockName :: String
+  , _blockAddress :: Address
+  , _blockEntries :: [Entry]
   } deriving (Show, Eq)
+
+reserved :: Int -> Entry
+reserved i = Entry "reserved" (Ignore i)
+
+entry :: DataType -> String -> Entry
+entry = flip Entry
 
 system2Block :: Block
 system2Block = Block
-  { _blockAddress = mkAddress 0x00 0x00 0x07
+  { _blockName = "system2"
+  , _blockAddress = mkAddress 0x00 0x00 0x07
   , _blockEntries =
-    [ Nothing
-    , Just Entry
-      { _entryName = "Velocity Curve"
-      , _entryDataType = IsWord7 0x00 0x06
-      }
-    , Nothing
-    , Nothing
-    , Nothing
-    , Nothing
-    , Nothing
-    , Just Entry
-      { _entryName = "32 Bulk Receive Block"
-      , _entryDataType = IsWord7 0x00 0x03
-      }
-    , Nothing
+    [ reserved 1
+    , entry (One 0x00 0x06) "velocityCurve"
+    , reserved 1
+    , reserved 1
+    , reserved 1
+    , reserved 1
+    , reserved 1
+    , entry (One 0x00 0x03) "bulkReceiveBlock"
+    , reserved 1
     ]
   }
 
-currentVoiceCommon1 :: Block
-currentVoiceCommon1 = Block
-  { _blockAddress = mkAddress 0x10 0x00 0x00
+currentCommonVoice1Block :: Block
+currentCommonVoice1Block = Block
+  { _blockName = "currentCommonVoice1"
+  , _blockAddress = mkAddress 0x10 0x00 0x00
   , _blockEntries =
-    [ Just Entry
-      { _entryName = "Distortion: Off/On"
-      , _entryDataType = IsWord7 0x00 0x01
-      }
+    [ entry (One 0x00 0x01) "distortionOffOn"
+    , entry (One 0x00 0x64) "distortionDrive"
+    , entry (One 0x00 0x03) "distortionAmpType"
+    , entry (One 0x22 0x3C) "distortionLpfCutoff"
+    , entry (One 0x00 0x64) "distortionOutLevel"
+    , entry (One 0x01 0x7F) "distortionDryWet"
+    , entry (One 0x04 0x28) "eqLowFreq"
+    , entry (One 0x34 0x4C) "eqLowGain"
+    , entry (One 0x0E 0x36) "eqMidFreq"
+    , entry (One 0x34 0x4C) "eqMidGain"
+    , entry (One 0x0A 0x78) "eqMidResonance"
+    , reserved 1
+    , entry (One 0x00 0x7F) "filterCutoff"
+    , entry (One 0x00 0x74) "filterResonance"
+    , entry (One 0x00 0x05) "filterType"
+    , entry (One 0x00 0x7F) "filterCutoffScalingDepth"
+    , entry (One 0x00 0x63) "filterCutoffModulationDepth"
+    , entry (One 0x34 0x4C) "filterInputGain"
+    , entry (One 0x00 0x7F) "fegAttack"
+    , entry (One 0x00 0x7F) "fegDecay"
+    , entry (One 0x00 0x7F) "fegSustain"
+    , entry (One 0x00 0x7F) "fegRelease"
+    , entry (One 0x00 0x7F) "fegDepth"
+    , entry (One 0x00 0x7F) "fegDepthVelocitySense"
+    , reserved 1
+    , entry (One 0x00 0x0F) "noiseOscType"
+    , entry (One 0x00 0x7F) "mixerVoiceLevel"
+    , entry (One 0x00 0x7F) "mixerNoiseLevel"
+    , entry (One 0x00 0x7F) "modulator1Harmonic"
+    , entry (One 0x00 0x7F) "modulator2Harmonic"
+    , entry (One 0x00 0x7F) "modulator3Harmonic"
+    , entry (One 0x00 0x7F) "modulator1FmDepth"
+    , entry (One 0x00 0x7F) "modulator2FmDepth"
+    , entry (One 0x00 0x7F) "modulator3FmDepth"
+    , entry (One 0x00 0x7F) "modulator1EgDecay"
+    , entry (One 0x00 0x7F) "modulator2EgDecay"
+    , entry (One 0x00 0x7F) "modulator3EgDecay"
+    , entry (One 0x00 0x7F) "aegAttack"
+    , entry (One 0x00 0x7F) "aegDecay"
+    , entry (One 0x00 0x7F) "aegSustain"
+    , entry (One 0x00 0x7F) "aegRelease"
     ]
   }
 
