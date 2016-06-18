@@ -14,11 +14,25 @@ dxParamChangeBytes = BL.pack
 
 dxParamChangeMsg :: DxParamChange
 dxParamChangeMsg = DxParamChange
-  { _dpcManf = Word7 0x43
-  , _dpcDevice = Word7 0x00
+  { _dpcManf       = Word7 0x43
+  , _dpcDevice     = Word7 0x00
   , _dpcParamGroup = Word7 0x19
-  , _dpcParam = Word7 0x4D
-  , _dpcData = Word7 0x00
+  , _dpcParam      = Word7 0x4D
+  , _dpcData       = Word7 0x00
+  }
+
+dxBulkDumpBytes :: BL.ByteString
+dxBulkDumpBytes = BL.pack
+  [ 0xF0, 0x43, 0x00, 0x62, 0x00, 0x05
+  , 0x03, 0x00, 0x01, 0x0C, 0x32, 0x39, 0xF7
+  ]
+
+dxBulkDumpMsg :: DxBulkDump
+dxBulkDumpMsg = DxBulkDump
+  { _dbdManf   = Word7 0x43
+  , _dbdDevice = Word7 0x00
+  , _dbdFormat = Word7 0x62
+  , _dbdData   = Word7 <$> [0x03, 0x00, 0x01, 0x0C, 0x32]
   }
 
 dx200BulkDumpBytes :: BL.ByteString
@@ -67,6 +81,7 @@ tests = testGroup "Tests"
   [ testGetN
   , testGetUntil
   , parses "dx param change" dxParamChangeBytes dxParamChangeMsg
+  , parses "dx bulk dump" dxBulkDumpBytes dxBulkDumpMsg
   , parses "dx200 native bulk dump" dx200BulkDumpBytes dx200BulkDumpMsg
   ]
 
