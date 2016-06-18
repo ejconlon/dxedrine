@@ -1,18 +1,13 @@
 module Dxedrine where
 
-import Control.Applicative
+import Control.Applicative ((<|>))
 import Control.Monad (forM_, unless)
 import Data.Binary
 import Data.Binary.Get
 import Data.Binary.Put
-import Data.Bits
+import Data.Bits ((.|.), (.&.), shiftL, shiftR, xor)
 import qualified Data.ByteString.Lazy as BL
-import Data.Word
-
--- Put isn't a monad fail so...
-unsafeGet :: Maybe a -> a
-unsafeGet (Just a) = a
-unsafeGet Nothing = undefined
+import Data.Word (Word8(..), Word16(..))
 
 newtype Word7 = Word7 { unWord7 :: Word8 } deriving (Show, Eq)
 
@@ -239,7 +234,9 @@ instance Binary DxBulkDump where
     putWord7 $ _dbdDevice m
     putWord7 $ _dbdFormat m
     let dataa = _dbdData m
-    putWord14 $ unsafeGet $ word14FromIntegral $ length dataa
+    case (word14FromIntegral $ length dataa) of
+      Just count -> putWord14 count
+      Nothing -> fail "data loo long"
     forM_ dataa putWord7
     putWord7 $ makeDbdChecksum m
     putWord8 sysexEnd
@@ -315,7 +312,9 @@ instance Binary Dx200BulkDump where
     putWord7 $ _d2bdDevice m
     putWord7 $ _d2bdModel m
     let dataa = _d2bdData m
-    putWord14 $ unsafeGet $ word14FromIntegral $ length dataa
+    case (word14FromIntegral $ length dataa) of
+      Just count -> putWord14 count
+      Nothing -> fail "data too long"
     let (addrHigh, addrMid, addrLow) = _d2bdAddr m
     putWord7 addrHigh
     putWord7 addrMid

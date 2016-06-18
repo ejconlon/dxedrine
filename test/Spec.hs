@@ -2,8 +2,7 @@ import Data.Binary
 import Data.Binary.Get
 import Data.Binary.Put
 import qualified Data.ByteString.Lazy as BL
-import Data.Monoid
-import Data.Word
+import Data.Monoid ((<>))
 import Dxedrine
 import Test.Tasty
 import Test.Tasty.HUnit
