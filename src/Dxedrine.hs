@@ -28,7 +28,7 @@ word14FromIntegral :: Integral a => a -> Maybe Word14
 word14FromIntegral i =
   let w16 = fromIntegral i :: Word16
       msb8 = (fromIntegral (w16 `shiftR` 7)) :: Word8
-      lsb8 = (fromIntegral (w16 .&. 0x00FF)) :: Word8
+      lsb8 = (fromIntegral (w16 .&. 0x007F)) :: Word8
   in do
     msb <- word7FromIntegral msb8
     lsb <- word7FromIntegral lsb8
@@ -188,9 +188,9 @@ makeDbdChecksum m =
 makeD2bdChecksum :: Dx200BulkDump -> Word7
 makeD2bdChecksum m =
   let dataa = _d2bdData m
-      count = (fromIntegral (length (dataa))) :: Word16
-      countMSB = (fromIntegral (count `shiftR` 7)) :: Word8
-      countLSB = (fromIntegral (count .&. 0x007F)) :: Word8
+      count = maybe (Word14 (Word7 0, Word7 0)) id $ word14FromIntegral (length (dataa))
+      countMSB = unWord7 (fst (unWord14 count))
+      countLSB = unWord7 (snd (unWord14 count))
       (addrHigh, addrMid, addrLow) = _d2bdAddr m
       value = (unWord7 addrHigh) +
               (unWord7 addrMid) +
