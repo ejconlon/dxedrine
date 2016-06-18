@@ -20,6 +20,7 @@ library
                      , binary
                      , bytestring
                      , transformers
+                     , hmidi
   default-language:    Haskell2010
 
 executable dxedrine-exe
