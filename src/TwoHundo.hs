@@ -3,15 +3,22 @@ module TwoHundo where
 import Data.Word
 import Dxedrine
 
-data DataType =
-    Ignore Int
-  | One Word8 Word8
-  | Two Word8 Word8 Word8 Word8
+data Range =
+    IgnoreR Int
+  | OneR Word8 Word8
+  | TwoR Word8 Word8 Word8 Word8
+  deriving (Show, Eq)
+
+data Value =
+    IgnoreV
+  | OneV Word8
+  | TwoV Word8 Word8
   deriving (Show, Eq)
 
 data Entry = Entry
   { _entryName :: String
-  , _entryDataType :: DataType
+  , _entryRange :: Range
+  , _entryDefault :: Value
   } deriving (Show, Eq)
 
 data Block = Block
@@ -21,10 +28,10 @@ data Block = Block
   } deriving (Show, Eq)
 
 reserved :: Int -> Entry
-reserved i = Entry "reserved" (Ignore i)
+reserved i = Entry "reserved" (IgnoreR i) (IgnoreV)
 
-entry :: DataType -> String -> Entry
-entry = flip Entry
+entry :: Range -> Value -> String -> Entry
+entry range value name = Entry name range value
 
 system2Block :: Block
 system2Block = Block
@@ -32,13 +39,13 @@ system2Block = Block
   , _blockAddress = mkAddress 0x00 0x00 0x07
   , _blockEntries =
     [ reserved 1
-    , entry (One 0x00 0x06) "velocityCurve"
+    , entry (OneR 0x00 0x06) (OneV 0x01) "velocityCurve"
     , reserved 1
     , reserved 1
     , reserved 1
     , reserved 1
     , reserved 1
-    , entry (One 0x00 0x03) "bulkReceiveBlock"
+    , entry (OneR 0x00 0x03) (OneV 0x00) "bulkReceiveBlock"
     , reserved 1
     ]
   }
@@ -48,47 +55,47 @@ currentCommonVoice1Block = Block
   { _blockName = "currentCommonVoice1"
   , _blockAddress = mkAddress 0x10 0x00 0x00
   , _blockEntries =
-    [ entry (One 0x00 0x01) "distortionOffOn"
-    , entry (One 0x00 0x64) "distortionDrive"
-    , entry (One 0x00 0x03) "distortionAmpType"
-    , entry (One 0x22 0x3C) "distortionLpfCutoff"
-    , entry (One 0x00 0x64) "distortionOutLevel"
-    , entry (One 0x01 0x7F) "distortionDryWet"
-    , entry (One 0x04 0x28) "eqLowFreq"
-    , entry (One 0x34 0x4C) "eqLowGain"
-    , entry (One 0x0E 0x36) "eqMidFreq"
-    , entry (One 0x34 0x4C) "eqMidGain"
-    , entry (One 0x0A 0x78) "eqMidResonance"
+    [ entry (OneR 0x00 0x01) (OneV 0x01) "distortionOffOn"
+    , entry (OneR 0x00 0x64) (OneV 0x40) "distortionDrive"
+    , entry (OneR 0x00 0x03) (OneV 0x01) "distortionAmpType"
+    , entry (OneR 0x22 0x3C) (OneV 0x30) "distortionLpfCutoff"
+    , entry (OneR 0x00 0x64) (OneV 0x3C) "distortionOutLevel"
+    , entry (OneR 0x01 0x7F) (OneV 0x01) "distortionDryWet"
+    , entry (OneR 0x04 0x28) (OneV 0x11) "eqLowFreq"
+    , entry (OneR 0x34 0x4C) (OneV 0x40) "eqLowGain"
+    , entry (OneR 0x0E 0x36) (OneV 0x28) "eqMidFreq"
+    , entry (OneR 0x34 0x4C) (OneV 0x40) "eqMidGain"
+    , entry (OneR 0x0A 0x78) (OneV 0x0A) "eqMidResonance"
     , reserved 1
-    , entry (One 0x00 0x7F) "filterCutoff"
-    , entry (One 0x00 0x74) "filterResonance"
-    , entry (One 0x00 0x05) "filterType"
-    , entry (One 0x00 0x7F) "filterCutoffScalingDepth"
-    , entry (One 0x00 0x63) "filterCutoffModulationDepth"
-    , entry (One 0x34 0x4C) "filterInputGain"
-    , entry (One 0x00 0x7F) "fegAttack"
-    , entry (One 0x00 0x7F) "fegDecay"
-    , entry (One 0x00 0x7F) "fegSustain"
-    , entry (One 0x00 0x7F) "fegRelease"
-    , entry (One 0x00 0x7F) "fegDepth"
-    , entry (One 0x00 0x7F) "fegDepthVelocitySense"
+    , entry (OneR 0x00 0x7F) (OneV 0x7F) "filterCutoff"
+    , entry (OneR 0x00 0x74) (OneV 0x10) "filterResonance"
+    , entry (OneR 0x00 0x05) (OneV 0x00) "filterType"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "filterCutoffScalingDepth"
+    , entry (OneR 0x00 0x63) (OneV 0x00) "filterCutoffModulationDepth"
+    , entry (OneR 0x34 0x4C) (OneV 0x40) "filterInputGain"
+    , entry (OneR 0x00 0x7F) (OneV 0x00) "fegAttack"
+    , entry (OneR 0x00 0x7F) (OneV 0x00) "fegDecay"
+    , entry (OneR 0x00 0x7F) (OneV 0x00) "fegSustain"
+    , entry (OneR 0x00 0x7F) (OneV 0x00) "fegRelease"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "fegDepth"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "fegDepthVelocitySense"
     , reserved 1
-    , entry (One 0x00 0x0F) "noiseOscType"
-    , entry (One 0x00 0x7F) "mixerVoiceLevel"
-    , entry (One 0x00 0x7F) "mixerNoiseLevel"
-    , entry (One 0x00 0x7F) "modulator1Harmonic"
-    , entry (One 0x00 0x7F) "modulator2Harmonic"
-    , entry (One 0x00 0x7F) "modulator3Harmonic"
-    , entry (One 0x00 0x7F) "modulator1FmDepth"
-    , entry (One 0x00 0x7F) "modulator2FmDepth"
-    , entry (One 0x00 0x7F) "modulator3FmDepth"
-    , entry (One 0x00 0x7F) "modulator1EgDecay"
-    , entry (One 0x00 0x7F) "modulator2EgDecay"
-    , entry (One 0x00 0x7F) "modulator3EgDecay"
-    , entry (One 0x00 0x7F) "aegAttack"
-    , entry (One 0x00 0x7F) "aegDecay"
-    , entry (One 0x00 0x7F) "aegSustain"
-    , entry (One 0x00 0x7F) "aegRelease"
+    , entry (OneR 0x00 0x0F) (OneV 0x00) "noiseOscType"
+    , entry (OneR 0x00 0x7F) (OneV 0x7F) "mixerVoiceLevel"
+    , entry (OneR 0x00 0x7F) (OneV 0x00) "mixerNoiseLevel"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "modulator1Harmonic"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "modulator2Harmonic"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "modulator3Harmonic"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "modulator1FmDepth"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "modulator2FmDepth"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "modulator3FmDepth"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "modulator1EgDecay"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "modulator2EgDecay"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "modulator3EgDecay"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "aegAttack"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "aegDecay"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "aegSustain"
+    , entry (OneR 0x00 0x7F) (OneV 0x40) "aegRelease"
     ]
   }
 
