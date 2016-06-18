@@ -6,9 +6,9 @@ import Dxedrine
 data Range =
     IgnoreR Int
   | OneR Word8 Word8
-  | TwoR Word8 Word8 Word8 Word8
-  | EnumOneR [Word8]
-  | EnumTwoR [Word8] [Word8]
+  | TwoR Range Range
+  | EnumR [Word8]
+  | MultiR Range Range
   deriving (Show, Eq)
 
 data Value =
@@ -42,11 +42,7 @@ system2Block = Block
   , _blockEntries =
     [ reserved 1
     , entry (OneR 0x00 0x06) (OneV 0x01) "velocityCurve"
-    , reserved 1
-    , reserved 1
-    , reserved 1
-    , reserved 1
-    , reserved 1
+    , reserved 5
     , entry (OneR 0x00 0x03) (OneV 0x00) "bulkReceiveBlock"
     , reserved 1
     ]
@@ -101,7 +97,7 @@ voiceCommon2Entries :: [Entry]
 voiceCommon2Entries =
   [ entry (OneR 0x00 0x03) (OneV 0x03) "modulatorSelect"
   , entry (OneR 0x00 0x03) (OneV 0x00) "sceneControl"
-  , entry (TwoR 0x00 0x4A 0x00 0x7F) (TwoV 0x8C) "commonTempo"
+  , entry (TwoR (OneR 0x00 0x4A) (OneR 0x00 0x7F)) (TwoV 0x8C) "commonTempo"
   , entry (OneR 0x32 0x53) (OneV 0x32) "playEffectSwing"
   ]
 
@@ -149,7 +145,7 @@ trackDataEntries :: [Entry]
 trackDataEntries = do
   i <- [1 .. 4]
   j <- [1 .. 192]
-  return $ entry (TwoR 0x00 0x01 0x00 0x7F) (TwoV 0x0100) ("freeEgTrack" ++ show i ++ "Data" ++ show j)
+  return $ entry (TwoR (OneR 0x00 0x01) (OneR 0x00 0x7F)) (TwoV 0x0100) ("freeEgTrack" ++ show i ++ "Data" ++ show j)
 
 voiceFreeEgEntries :: [Entry]
 voiceFreeEgEntries =
@@ -166,12 +162,9 @@ multiply lim e = do
 
 voiceStepSeqEntries :: [Entry]
 voiceStepSeqEntries =
-  [ entry (EnumOneR [0x04, 0x06, 0x07]) (OneV 0x07) "stepSeqBaseUnit"
-  , entry (EnumOneR [0x08, 0x0C, 0x10]) (OneV 0x10) "stepSeqLength"
-  , reserved 1
-  , reserved 1
-  , reserved 1
-  , reserved 1
+  [ entry (EnumR [0x04, 0x06, 0x07]) (OneV 0x07) "stepSeqBaseUnit"
+  , entry (EnumR [0x08, 0x0C, 0x10]) (OneV 0x10) "stepSeqLength"
+  , reserved 4
   ] ++ multiply 16 (entry (OneR 0x00 0xF7) (OneV 0x3C) "stepSeqNote")
     ++ multiply 16 (entry (OneR 0x00 0xF7) (OneV 0x64) "stepSeqVelocity")
     ++ multiply 16 (entry (OneR 0x00 0xF7) (OneV 0x3C) "stepSeqGateTimeLsb")
@@ -181,27 +174,42 @@ voiceStepSeqEntries =
 
 effectEntries :: [Entry]
 effectEntries =
-  [ entry (EnumTwoR [0x00, 0x01, 0x02, 0x03] [0x00, 0x01, 0x02, 0x03]) (TwoV 0x00) "effectType"
+  [ entry (TwoR (EnumR [0x00, 0x01, 0x02, 0x03]) (EnumR [0x00, 0x01, 0x02, 0x03])) (TwoV 0x00) "effectType"
   , entry (OneR 0x00 0x7F) (OneV 0x00) "effectParameter"
   ]
 
 partMixEntries :: [Entry]
 partMixEntries =
-  [ reserved 1
-  , reserved 1
-  , reserved 1
-  , reserved 1
-  , reserved 1
+  [ reserved 5
   , entry (OneR 0x00 0x7F) (OneV 0x00) "volume"
   , entry (OneR 0x00 0x7F) (OneV 0x00) "pan"
   , entry (OneR 0x00 0x7F) (OneV 0x00) "effect1Send"
-  , reserved 1
-  , reserved 1
+  , reserved 5
   , entry (OneR 0x00 0x7F) (OneV 0x00) "filterCutoffFrequency"
   , entry (OneR 0x00 0x7F) (OneV 0x00) "filterResonance"
-  , reserved 1
-  , reserved 1
-  , reserved 1
+  , reserved 3
+  ]
+
+rhythmStepSeqEntries :: [Entry]
+rhythmStepSeqEntries =
+  [ reserved 6
+  ] ++ multiply 16 (entry (OneR 0x00 0x78) (OneV 0x00) "stepSeqInstrument")
+    ++ multiply 16 (entry (OneR 0x00 0x7F) (OneV 0x64) "stepSeqVelocity")
+    ++ multiply 16 (entry (OneR 0x00 0x7F) (OneV 0x3C) "stepSeqGateTimeLsb")
+    ++ multiply 16 (entry (OneR 0x00 0x7F) (OneV 0x00) "stepSeqPitch")
+    ++ multiply 16 (entry (OneR 0x00 0xF7) (OneV 0x00) "stepSeqGateTimeMsb")
+    ++ multiply 16 (entry (OneR 0x00 0x01) (OneV 0x00) "stepSeqMute")
+
+songEntries :: [Entry]
+songEntries =
+  [ entry (TwoR (OneR 0x00 0x7F) (OneR 0x00 0x7F)) (TwoV 0x00) "patternNum"
+  , entry (TwoR (OneR 0x00 0x7F) (OneR 0x00 0x7F)) (TwoV 0x8C) "bpm"
+  , entry (TwoR (OneR 0x00 0x7F) (OneR 0x00 0x7F)) (TwoV 0x64) "playFxGateTime"
+  , entry (EnumR [0x00, 0x01, 0x02, 0x03, 0x7F]) (OneV 0x00) "beat"
+  , entry (MultiR (OneR 0x32 0x53) (EnumR [0x7F])) (OneV 0x50) "swing"
+  , entry (MultiR (OneR 0x28 0x58) (EnumR [0x7F])) (OneV 0x00) "pitch"
+  , entry (EnumR [0x00, 0x01, 0x7F]) (OneV 0x00) "loopType"
+  , entry (MultiR (OneR 0x00 0x0F) (EnumR [0x7F])) (OneV 0x00) "trackMute"
   ]
 
 {-
