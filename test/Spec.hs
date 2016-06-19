@@ -122,21 +122,31 @@ enumEntry =
   [ entry (EnumR [0x01, 0x03]) (oneV 0x03) "enum"
   ]
 
+multiEntry :: [Entry]
+multiEntry =
+  [ entry (MultiR (OneR 0x00 0x60) (EnumR [0x70, 0x80])) (oneV 0x10) "multi"
+  ]
+
 testDefaultHlist :: TestTree
 testDefaultHlist = testCase "defaultHlist" $ do
   defaultHlist oneEntry @?= Hlist [("one", oneV 0x10)]
   defaultHlist twoEntry @?= Hlist [("two", twoV 0x3C)]
   defaultHlist enumEntry @?= Hlist [("enum", oneV 0x03)]
+  defaultHlist multiEntry @?= Hlist [("multi", oneV 0x10)]
 
 testPackHlist :: TestTree
 testPackHlist = testCase "packHlist" $ do
   packHlist False oneEntry (Hlist []) @?= Left "field \"one\" missing"
   packHlist True oneEntry (Hlist []) @?= Right [Word7 0x10]
   packHlist True oneEntry (Hlist [("one", oneV 0x12)]) @?= Right [Word7 0x12]
+  packHlist True oneEntry (Hlist [("one", oneV 0x70)]) @?= Left "field \"one\" invalid: 112 outside range [0, 96]"
   packHlist True twoEntry (Hlist []) @?= Right [Word7 0x00, Word7 0x3C]
   packHlist True twoEntry (Hlist [("two", twoV 0x34)]) @?= Right [Word7 0x00, Word7 0x34]
   packHlist True enumEntry (Hlist []) @?= Right [Word7 0x03]
   packHlist True enumEntry (Hlist [("enum", oneV 0x01)]) @?= Right [Word7 0x01]
+  packHlist True multiEntry (Hlist []) @?= Right [Word7 0x10]
+  packHlist True multiEntry (Hlist [("multi", oneV 0x09)]) @?= Right [Word7 0x09]
+  packHlist True multiEntry (Hlist [("multi", oneV 0x70)]) @?= Right [Word7 0x70]
 
 tests :: TestTree
 tests = testGroup "Tests"
