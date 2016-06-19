@@ -60,6 +60,8 @@ packValue' r v =
       xs <- packValue' e1 (OneV x)
       ys <- packValue' e2 (OneV y)
       return $ xs ++ ys
+    (EnumR vals, OneV w@(Word7 x)) ->
+      if (x `elem` vals) then Right [w] else Left $ show x ++ " not an element of " ++ show vals
     _ -> Left "wrong byte length"
 
 packValue :: Entry -> Value -> Either String [Word7]

@@ -117,10 +117,16 @@ twoEntry =
   [ entry (TwoR (OneR 0x00 0x01) (OneR 0x00 0x7F)) (twoV 0x3C) "two"
   ]
 
+enumEntry :: [Entry]
+enumEntry =
+  [ entry (EnumR [0x01, 0x03]) (oneV 0x03) "enum"
+  ]
+
 testDefaultHlist :: TestTree
 testDefaultHlist = testCase "defaultHlist" $ do
   defaultHlist oneEntry @?= Hlist [("one", oneV 0x10)]
   defaultHlist twoEntry @?= Hlist [("two", twoV 0x3C)]
+  defaultHlist enumEntry @?= Hlist [("enum", oneV 0x03)]
 
 testPackHlist :: TestTree
 testPackHlist = testCase "packHlist" $ do
@@ -128,6 +134,8 @@ testPackHlist = testCase "packHlist" $ do
   packHlist oneEntry (Hlist [("one", oneV 0x12)]) @?= Right [Word7 0x12]
   packHlist twoEntry (Hlist []) @?= Right [Word7 0x00, Word7 0x3C]
   packHlist twoEntry (Hlist [("two", twoV 0x34)]) @?= Right [Word7 0x00, Word7 0x34]
+  packHlist enumEntry (Hlist []) @?= Right [Word7 0x03]
+  packHlist enumEntry (Hlist [("enum", oneV 0x01)]) @?= Right [Word7 0x01]
 
 tests :: TestTree
 tests = testGroup "Tests"
