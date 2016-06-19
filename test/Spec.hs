@@ -6,6 +6,7 @@ import Data.Monoid ((<>))
 import Dxedrine
 import Test.Tasty
 import Test.Tasty.HUnit
+import TwoHundo
 
 dxParamChangeBytes :: BL.ByteString
 dxParamChangeBytes = BL.pack
@@ -106,10 +107,26 @@ testGetUntil = testCase "getUntil" $ do
   runGetOrError (getUntil getWord8 (== 3)) (BL.pack [1,2,3,4]) @?= Right ([1,2], 3)
   runGetOrError (getUntil getWord8 (== 3)) (BL.pack [1,2]) @?= Left "not enough bytes"
 
+someEntries :: [Entry]
+someEntries =
+  [ entry (OneR 0x00 0x60) (oneV 0x10) "one"
+  ]
+
+testDefaultHlist :: TestTree
+testDefaultHlist = testCase "defaultHlist" $ do
+  defaultHlist someEntries @?= Hlist [("one", oneV 0x10)]
+
+testPackHlist :: TestTree
+testPackHlist = testCase "packHlist" $ do
+  packHlist someEntries (Hlist []) @?= Right [Word7 0x10]
+  packHlist someEntries (Hlist [("one", oneV 0x12)]) @?= Right [Word7 0x12]
+
 tests :: TestTree
 tests = testGroup "Tests"
   [ testGetN
   , testGetUntil
+  --, testDefaultHlist
+  --, testPackHlist
   , parses "dx param change" dxParamChangeBytes dxParamChangeMsg
   , parses "dx bulk dump" dxBulkDumpBytes dxBulkDumpMsg
   , parses "dx200 param change" dx200ParamChangeBytes dx200ParamChangeMsg

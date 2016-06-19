@@ -8,32 +8,27 @@ import Data.Binary.Get
 import Data.Binary.Put
 import Data.Bits ((.|.), (.&.), shiftL, shiftR, xor)
 import qualified Data.ByteString.Lazy as BL
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Maybe (isNothing)
 import Data.Word (Word8(..), Word16(..))
 
 newtype Word7 = Word7 { unWord7 :: Word8 } deriving (Show, Eq)
 
-word7FromIntegral :: Integral a => a -> Maybe Word7
+word7FromIntegral :: Integral a => a -> Word7
 word7FromIntegral i =
   let w8 = fromIntegral i :: Word8
-  in if w8 .&. 0x80 == 0
-    then Just $ Word7 w8
-    else Nothing
+  in Word7 (w8 .&. 0x7F)
 
 word7ToInteger :: Word7 -> Integer
 word7ToInteger (Word7 w8) = toInteger w8
 
 newtype Word14 = Word14 { unWord14 :: (Word7, Word7) } deriving (Show, Eq)
 
-word14FromIntegral :: Integral a => a -> Maybe Word14
+word14FromIntegral :: Integral a => a -> Word14
 word14FromIntegral i =
   let w16 = fromIntegral i :: Word16
       msb8 = fromIntegral (w16 `shiftR` 7) :: Word8
       lsb8 = fromIntegral (w16 .&. 0x007F) :: Word8
-  in do
-    msb <- word7FromIntegral msb8
-    lsb <- word7FromIntegral lsb8
-    return $ Word14 (msb, lsb)
+  in Word14 (word7FromIntegral msb8, word7FromIntegral lsb8)
 
 word14ToInteger :: Word14 -> Integer
 word14ToInteger (Word14 (Word7 msb8, Word7 lsb8)) =
@@ -47,11 +42,11 @@ newtype Address = Address
   } deriving (Show, Eq)
 
 mkAddress :: Word8 -> Word8 -> Word8 -> Address
-mkAddress i8 j8 k8 = fromMaybe undefined $ do
-  i7 <- word7FromIntegral $ 0x7F .&. i8
-  j7 <- word7FromIntegral $ 0x7F .&. j8
-  k7 <- word7FromIntegral $ 0x7F .&. k8
-  return $ Address (i7, j7, k7)
+mkAddress i8 j8 k8 =
+  let i7 = word7FromIntegral i8
+      j7 = word7FromIntegral j8
+      k7 = word7FromIntegral k8
+  in Address (i7, j7, k7)
 
 data DxParamChange = DxParamChange
   { _dpcManf :: Word7
@@ -200,9 +195,9 @@ makeDbdChecksum m =
 makeD2bdChecksum :: Dx200BulkDump -> Word7
 makeD2bdChecksum m =
   let dataa = _d2bdData m
-      count = fromMaybe (Word14 (Word7 0, Word7 0)) $ word14FromIntegral (length dataa)
-      countMSB = unWord7 (fst (unWord14 count))
-      countLSB = unWord7 (snd (unWord14 count))
+      count = unWord14 $ word14FromIntegral (length dataa)
+      countMSB = unWord7 (fst count)
+      countLSB = unWord7 (snd count)
       (addrHigh, addrMid, addrLow) = unAddress $ _d2bdAddr m
       value = unWord7 addrHigh +
               unWord7 addrMid +
@@ -272,9 +267,7 @@ instance Binary DxBulkDump where
     putWord7 $ _dbdDevice m
     putWord7 $ _dbdFormat m
     let dataa = _dbdData m
-    case word14FromIntegral (length dataa) of
-      Just count -> putWord14 count
-      Nothing -> fail "data loo long"
+    putWord14 $ word14FromIntegral $ length dataa
     forM_ dataa putWord7
     putWord7 $ makeDbdChecksum m
     putWord8 sysexEnd
@@ -350,9 +343,7 @@ instance Binary Dx200BulkDump where
     putWord7 $ _d2bdDevice m
     putWord7 $ _d2bdModel m
     let dataa = _d2bdData m
-    case word14FromIntegral (length dataa) of
-      Just count -> putWord14 count
-      Nothing -> fail "data too long"
+    putWord14 $ word14FromIntegral $ length dataa
     let (addrHigh, addrMid, addrLow) = unAddress $ _d2bdAddr m
     putWord7 addrHigh
     putWord7 addrMid
