@@ -155,6 +155,7 @@ testPackHlist = testCase "packHlist" $ do
   packHlist True multiEntry (Hlist [("multi", oneV 0x70)]) @?= Right [Word7 0x70]
   packHlist True ignoreEntry (Hlist []) @?= Right [Word7 0x00, Word7 0x00]
   packHlist False ignoreEntry (Hlist []) @?= Right [Word7 0x00, Word7 0x00]
+  packHlist True (oneEntry ++ twoEntry) (Hlist []) @?= Right [Word7 0x10, Word7 0x00, Word7 0x3C]
 
 tests :: TestTree
 tests = testGroup "Tests"
