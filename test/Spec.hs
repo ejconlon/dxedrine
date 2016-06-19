@@ -127,12 +127,18 @@ multiEntry =
   [ entry (MultiR (OneR 0x00 0x60) (EnumR [0x70, 0x80])) (oneV 0x10) "multi"
   ]
 
+ignoreEntry :: [Entry]
+ignoreEntry =
+  [ reserved 2
+  ]
+
 testDefaultHlist :: TestTree
 testDefaultHlist = testCase "defaultHlist" $ do
   defaultHlist oneEntry @?= Hlist [("one", oneV 0x10)]
   defaultHlist twoEntry @?= Hlist [("two", twoV 0x3C)]
   defaultHlist enumEntry @?= Hlist [("enum", oneV 0x03)]
   defaultHlist multiEntry @?= Hlist [("multi", oneV 0x10)]
+  defaultHlist ignoreEntry @?= Hlist []
 
 testPackHlist :: TestTree
 testPackHlist = testCase "packHlist" $ do
@@ -147,6 +153,8 @@ testPackHlist = testCase "packHlist" $ do
   packHlist True multiEntry (Hlist []) @?= Right [Word7 0x10]
   packHlist True multiEntry (Hlist [("multi", oneV 0x09)]) @?= Right [Word7 0x09]
   packHlist True multiEntry (Hlist [("multi", oneV 0x70)]) @?= Right [Word7 0x70]
+  packHlist True ignoreEntry (Hlist []) @?= Right [Word7 0x00, Word7 0x00]
+  packHlist False ignoreEntry (Hlist []) @?= Right [Word7 0x00, Word7 0x00]
 
 tests :: TestTree
 tests = testGroup "Tests"

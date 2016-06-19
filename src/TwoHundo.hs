@@ -47,9 +47,13 @@ newtype Hlist = Hlist
   } deriving (Show, Eq)
 
 defaultHlist :: [Entry] -> Hlist
-defaultHlist entries = Hlist (go <$> entries)
+defaultHlist entries = Hlist hvalues
   where
-    go e = (_entryName e, _entryDefault e)
+    hvalues = do
+      e <- entries
+      case (_entryRange e) of
+        IgnoreR _ -> mempty
+        _ -> return (_entryName e, _entryDefault e)
 
 packValue' :: Range -> Value -> Either String [Word7]
 packValue' r v =
@@ -69,6 +73,7 @@ packValue' r v =
           case packValue' e2 v of
             Right ys -> Right ys
             Left r2 -> Left $ "both " ++ r1 ++ " and " ++ r2
+    (IgnoreR i, IgnoreV) -> Right $ replicate i $ Word7 0x00
     _ -> Left "wrong byte length"
 
 packValue :: Entry -> Value -> Either String [Word7]
@@ -81,7 +86,10 @@ packHlist useDefault entries hlist = go entries []
     go (e:es) xs =
       let v = lookup (_entryName e) (unHlist hlist)
       in case (useDefault, v) of
-        (False, Nothing) -> Left $ "field \"" ++ _entryName e ++ "\" missing"
+        (False, Nothing) ->
+          case _entryRange e of
+            IgnoreR i -> go es (xs ++ (replicate i (Word7 0x00)))
+            _ -> Left $ "field \"" ++ _entryName e ++ "\" missing"
         _ -> let vv = fromMaybe (_entryDefault e) v
              in case packValue e vv of
                Left r -> Left $ "field \"" ++ _entryName e ++ "\" invalid: " ++ r
