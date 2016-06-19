@@ -62,20 +62,30 @@ packValue' r v =
       return $ xs ++ ys
     (EnumR vals, OneV w@(Word7 x)) ->
       if (x `elem` vals) then Right [w] else Left $ show x ++ " not an element of " ++ show vals
+    (MultiR e1 e2, OneV w@(Word7 x)) ->
+      case packValue' e1 v of
+        Right xs -> Right xs
+        Left r1 ->
+          case packValue' e2 v of
+            Right ys -> Right ys
+            Left r2 -> Left $ "both " ++ r1 ++ " and " ++ r2
     _ -> Left "wrong byte length"
 
 packValue :: Entry -> Value -> Either String [Word7]
 packValue e v = packValue' (_entryRange e) v
 
-packHlist :: [Entry] -> Hlist -> Either String [Word7]
-packHlist entries hlist = go entries []
+packHlist :: Bool -> [Entry] -> Hlist -> Either String [Word7]
+packHlist useDefault entries hlist = go entries []
   where
     go [] xs = Right xs
     go (e:es) xs =
-      let v = fromMaybe (_entryDefault e) $ lookup (_entryName e) (unHlist hlist)
-      in case packValue e v of
-        Left r -> Left $ "field \"" ++ _entryName e ++ "\" invalid: " ++ r
-        Right ys -> go es (xs ++ ys)
+      let v = lookup (_entryName e) (unHlist hlist)
+      in case (useDefault, v) of
+        (False, Nothing) -> Left $ "field \"" ++ _entryName e ++ "\" missing"
+        _ -> let vv = fromMaybe (_entryDefault e) v
+             in case packValue e vv of
+               Left r -> Left $ "field \"" ++ _entryName e ++ "\" invalid: " ++ r
+               Right ys -> go es (xs ++ ys)
 
 reserved :: Int -> Entry
 reserved i = Entry "reserved" (IgnoreR i) IgnoreV

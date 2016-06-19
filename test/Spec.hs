@@ -130,12 +130,13 @@ testDefaultHlist = testCase "defaultHlist" $ do
 
 testPackHlist :: TestTree
 testPackHlist = testCase "packHlist" $ do
-  packHlist oneEntry (Hlist []) @?= Right [Word7 0x10]
-  packHlist oneEntry (Hlist [("one", oneV 0x12)]) @?= Right [Word7 0x12]
-  packHlist twoEntry (Hlist []) @?= Right [Word7 0x00, Word7 0x3C]
-  packHlist twoEntry (Hlist [("two", twoV 0x34)]) @?= Right [Word7 0x00, Word7 0x34]
-  packHlist enumEntry (Hlist []) @?= Right [Word7 0x03]
-  packHlist enumEntry (Hlist [("enum", oneV 0x01)]) @?= Right [Word7 0x01]
+  packHlist False oneEntry (Hlist []) @?= Left "field \"one\" missing"
+  packHlist True oneEntry (Hlist []) @?= Right [Word7 0x10]
+  packHlist True oneEntry (Hlist [("one", oneV 0x12)]) @?= Right [Word7 0x12]
+  packHlist True twoEntry (Hlist []) @?= Right [Word7 0x00, Word7 0x3C]
+  packHlist True twoEntry (Hlist [("two", twoV 0x34)]) @?= Right [Word7 0x00, Word7 0x34]
+  packHlist True enumEntry (Hlist []) @?= Right [Word7 0x03]
+  packHlist True enumEntry (Hlist [("enum", oneV 0x01)]) @?= Right [Word7 0x01]
 
 tests :: TestTree
 tests = testGroup "Tests"
