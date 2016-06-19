@@ -107,19 +107,27 @@ testGetUntil = testCase "getUntil" $ do
   runGetOrError (getUntil getWord8 (== 3)) (BL.pack [1,2,3,4]) @?= Right ([1,2], 3)
   runGetOrError (getUntil getWord8 (== 3)) (BL.pack [1,2]) @?= Left "not enough bytes"
 
-someEntries :: [Entry]
-someEntries =
+oneEntry :: [Entry]
+oneEntry =
   [ entry (OneR 0x00 0x60) (oneV 0x10) "one"
+  ]
+
+twoEntry :: [Entry]
+twoEntry =
+  [ entry (TwoR (OneR 0x00 0x01) (OneR 0x00 0x7F)) (twoV 0x3C) "two"
   ]
 
 testDefaultHlist :: TestTree
 testDefaultHlist = testCase "defaultHlist" $ do
-  defaultHlist someEntries @?= Hlist [("one", oneV 0x10)]
+  defaultHlist oneEntry @?= Hlist [("one", oneV 0x10)]
+  defaultHlist twoEntry @?= Hlist [("two", twoV 0x3C)]
 
 testPackHlist :: TestTree
 testPackHlist = testCase "packHlist" $ do
-  packHlist someEntries (Hlist []) @?= Right [Word7 0x10]
-  packHlist someEntries (Hlist [("one", oneV 0x12)]) @?= Right [Word7 0x12]
+  packHlist oneEntry (Hlist []) @?= Right [Word7 0x10]
+  packHlist oneEntry (Hlist [("one", oneV 0x12)]) @?= Right [Word7 0x12]
+  packHlist twoEntry (Hlist []) @?= Right [Word7 0x00, Word7 0x3C]
+  packHlist twoEntry (Hlist [("two", twoV 0x34)]) @?= Right [Word7 0x00, Word7 0x34]
 
 tests :: TestTree
 tests = testGroup "Tests"

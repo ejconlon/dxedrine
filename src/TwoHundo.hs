@@ -51,12 +51,19 @@ defaultHlist entries = Hlist (go <$> entries)
   where
     go e = (_entryName e, _entryDefault e)
 
+packValue' :: Range -> Value -> Either String [Word7]
+packValue' r v =
+  case (r, v) of
+    (OneR s e, OneV w@(Word7 x)) ->
+      if (x >= s && x <= e) then Right [w] else Left $ show x ++ " outside range [" ++ show s ++ ", " ++ show e ++ "]"
+    (TwoR e1 e2, TwoV w@(Word14 (x, y))) -> do
+      xs <- packValue' e1 (OneV x)
+      ys <- packValue' e2 (OneV y)
+      return $ xs ++ ys
+    _ -> Left "wrong byte length"
+
 packValue :: Entry -> Value -> Either String [Word7]
-packValue e v =
-  case (_entryRange e, v) of
-    (OneR s e, (OneV w@(Word7 x))) ->
-      if (x >= s && x <= e) then Right [w] else Left "outside range"
-    _ -> Left "unmatched"
+packValue e v = packValue' (_entryRange e) v
 
 packHlist :: [Entry] -> Hlist -> Either String [Word7]
 packHlist entries hlist = go entries []
