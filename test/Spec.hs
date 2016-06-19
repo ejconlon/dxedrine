@@ -125,8 +125,8 @@ tests :: TestTree
 tests = testGroup "Tests"
   [ testGetN
   , testGetUntil
-  --, testDefaultHlist
-  --, testPackHlist
+  , testDefaultHlist
+  , testPackHlist
   , parses "dx param change" dxParamChangeBytes dxParamChangeMsg
   , parses "dx bulk dump" dxBulkDumpBytes dxBulkDumpMsg
   , parses "dx200 param change" dx200ParamChangeBytes dx200ParamChangeMsg
