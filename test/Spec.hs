@@ -176,6 +176,11 @@ testUnpackHlist = testCase "unpackHlist" $ do
   unpackHlist enumEntry [Word7 0x01] @?= Right (Hlist [("enum", oneV 0x01)], [])
   unpackHlist enumEntry [Word7 0x01, Word7 0x55] @?= Right (Hlist [("enum", oneV 0x01)], [Word7 0x55])
   unpackHlist enumEntry [Word7 0x55] @?= Left "error unpacking \"enum\": 85 not an element of [1,3]"
+  unpackHlist (oneEntry ++ enumEntry) [Word7 0x01, Word7 0x03, Word7 0x66] @?= Right (Hlist [("one", oneV 0x01), ("enum", oneV 0x03)], [Word7 0x66])
+  unpackHlist multiEntry [] @?= Left "error unpacking \"multi\": empty"
+  unpackHlist multiEntry [Word7 0x09] @?= Right (Hlist [("multi", oneV 0x09)], [])
+  unpackHlist multiEntry [Word7 0x70] @?= Right (Hlist [("multi", oneV 0x70)], [])
+  unpackHlist multiEntry [Word7 0x71] @?= Left "error unpacking \"multi\": both 113 outside range [0, 96] and 113 not an element of [112,128]"
 
 tests :: TestTree
 tests = testGroup "Tests"
