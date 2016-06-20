@@ -163,6 +163,10 @@ testUnpackHlist = testCase "unpackHlist" $ do
   unpackHlist ignoreEntry [Word7 1] @?= Left "error unpacking \"reserved\": not enough bytes: 1 of 2"
   unpackHlist ignoreEntry [Word7 1, Word7 2] @?= Right (Hlist [], [])
   unpackHlist ignoreEntry [Word7 1, Word7 2, Word7 3] @?= Right (Hlist [], [Word7 3])
+  unpackHlist oneEntry [] @?= Left "error unpacking \"one\": empty"
+  unpackHlist oneEntry [Word7 1] @?= Right (Hlist [("one", oneV 1)], [])
+  unpackHlist oneEntry [Word7 1, Word7 2] @?= Right (Hlist [("one", oneV 1)], [Word7 2])
+  unpackHlist oneEntry [Word7 0x70] @?= Left "error unpacking \"one\": 112 outside range [0, 96]"
 
 tests :: TestTree
 tests = testGroup "Tests"

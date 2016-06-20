@@ -76,6 +76,12 @@ packValue' r v =
     (IgnoreR i, IgnoreV) -> Right $ replicate i $ Word7 0x00
     _ -> Left "wrong byte length"
 
+validate :: Range -> Value -> Maybe String
+validate r v =
+  case packValue' r v of
+    Left x -> Just x
+    _ -> Nothing
+
 packValue :: Entry -> Value -> Either String [Word7]
 packValue e v = packValue' (_entryRange e) v
 
@@ -102,7 +108,14 @@ unpackHlist' e ws =
       if length ws >= i
         then Right (Nothing, drop i ws)
         else Left $ "not enough bytes: " ++ show (length ws) ++ " of " ++ show i
-
+    OneR _ _ ->
+      if length ws >= 1
+        then let v = OneV (head ws)
+              in do
+                _ <- packValue' (_entryRange e) v
+                return (Just (_entryName e, v), drop 1 ws)
+        else Left $ "empty"
+    _ -> Left "TODO"
 
 unpackHlist :: [Entry] -> [Word7] -> Either String (Hlist, [Word7])
 unpackHlist = go []
