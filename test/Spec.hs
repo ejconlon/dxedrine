@@ -172,6 +172,10 @@ testUnpackHlist = testCase "unpackHlist" $ do
   unpackHlist twoEntry [Word7 0x00, Word7 0x34] @?= Right (Hlist [("two", twoV 0x34)], [])
   unpackHlist twoEntry [Word7 0x00, Word7 0x34, Word7 0x55] @?= Right (Hlist [("two", twoV 0x34)], [Word7 0x55])
   unpackHlist twoEntry [Word7 0xF7, Word7 0x34] @?= Left "error unpacking \"two\": 247 outside range [0, 1]"
+  unpackHlist enumEntry [] @?= Left "error unpacking \"enum\": empty"
+  unpackHlist enumEntry [Word7 0x01] @?= Right (Hlist [("enum", oneV 0x01)], [])
+  unpackHlist enumEntry [Word7 0x01, Word7 0x55] @?= Right (Hlist [("enum", oneV 0x01)], [Word7 0x55])
+  unpackHlist enumEntry [Word7 0x55] @?= Left "error unpacking \"enum\": 85 not an element of [1,3]"
 
 tests :: TestTree
 tests = testGroup "Tests"

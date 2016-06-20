@@ -122,6 +122,13 @@ unpackHlist' e ws =
                 _ <- packValue' (_entryRange e) v
                 return (Just (_entryName e, v), drop 2 ws)
         else Left $ "not enough bytes: " ++ show (length ws) ++ " of 2"
+    EnumR _ ->
+      if length ws >= 1
+        then let v = OneV (head ws)
+              in do
+                _ <- packValue' (_entryRange e) v
+                return (Just (_entryName e, v), drop 1 ws)
+        else Left $ "empty"
     _ -> Left "TODO"
 
 unpackHlist :: [Entry] -> [Word7] -> Either String (Hlist, [Word7])
