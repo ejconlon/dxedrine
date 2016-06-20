@@ -37,7 +37,7 @@ data Context = Context
   , _contextMeasure :: Maybe Word16
   , _contextPart :: Maybe Word8
   , _contextPattern :: Maybe Word8
-  }
+  } deriving (Show, Eq)
 
 emptyContext :: Context
 emptyContext = Context Nothing Nothing Nothing Nothing
@@ -94,6 +94,27 @@ packHlist useDefault entries hlist = go entries []
              in case packValue e vv of
                Left r -> Left $ "field \"" ++ _entryName e ++ "\" invalid: " ++ r
                Right ys -> go es (xs ++ ys)
+
+unpackHlist' :: Entry -> [Word7] -> Either String (Maybe (String, Value), [Word7])
+unpackHlist' e ws =
+  case (_entryRange e) of
+    IgnoreR i ->
+      if length ws >= i
+        then Right (Nothing, drop i ws)
+        else Left $ "not enough bytes: " ++ show (length ws) ++ " of " ++ show i
+
+
+unpackHlist :: [Entry] -> [Word7] -> Either String (Hlist, [Word7])
+unpackHlist = go []
+  where
+    go hl [] ws = Right (Hlist (reverse hl), ws)
+    go hl (e:es) ws =
+      case unpackHlist' e ws of
+        Left r -> Left $ "error unpacking \"" ++ _entryName e ++ "\": " ++ r
+        Right (p, xs) ->
+          case p of
+            Nothing -> go hl es xs
+            Just pp -> go (pp : hl) es xs
 
 reserved :: Int -> Entry
 reserved i = Entry "reserved" (IgnoreR i) IgnoreV
@@ -306,8 +327,8 @@ match6D i j | i >= 0x70 && i < 0x80 =
   Just (emptyContext { _contextSong = Just (i .&. 0x0F), _contextMeasure = Just ((fromIntegral j :: Word16) + 0x7F) }, songEntries)
 match6D _ _ = Nothing
 
-getEntries :: Word7 -> Address -> Maybe (Context, [Entry])
-getEntries modelId address =
+getEntries' :: Word7 -> Address -> Maybe (Context, [Entry])
+getEntries' modelId address =
   case low8 of
     0 -> Nothing
     _ ->
@@ -318,4 +339,10 @@ getEntries modelId address =
   where
     Address (Word7 hi8, Word7 mid8, Word7 low8) = address
     (Word7 model8) = modelId
+
+getEntries :: DxUnion -> Maybe (Context, [Entry])
+getEntries (DPC m) = Nothing
+getEntries (DBD m) = Nothing
+getEntries (D2PC m) = getEntries' (_d2pcModel m) (_d2pcAddr m)
+getEntries (D2BD m) = getEntries' (_d2bdModel m) (_d2bdAddr m)
 

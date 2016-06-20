@@ -2,6 +2,7 @@ module Main where
 
 import Control.Monad (forM_, unless)
 import Dxedrine
+import TwoHundo
 
 main :: IO ()
 main = do
@@ -11,6 +12,9 @@ main = do
   unless (numFailed == 0) $ fail $ "number of failed messages: " ++ show numFailed
   let unions = keepSuccessful e
   forM_ unions $ \x -> do
-    putStrLn $ show x
+    case getEntries x of
+      Nothing -> return ()
+      Just p@(context, entries) ->
+        putStrLn $ show (x, context, entries)
   putStrLn "done"
   return ()

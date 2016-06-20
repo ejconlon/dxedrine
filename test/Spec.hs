@@ -157,12 +157,20 @@ testPackHlist = testCase "packHlist" $ do
   packHlist False ignoreEntry (Hlist []) @?= Right [Word7 0x00, Word7 0x00]
   packHlist True (oneEntry ++ twoEntry) (Hlist []) @?= Right [Word7 0x10, Word7 0x00, Word7 0x3C]
 
+testUnpackHlist :: TestTree
+testUnpackHlist = testCase "unpackHlist" $ do
+  unpackHlist ignoreEntry [] @?= Left "error unpacking \"reserved\": not enough bytes: 0 of 2"
+  unpackHlist ignoreEntry [Word7 1] @?= Left "error unpacking \"reserved\": not enough bytes: 1 of 2"
+  unpackHlist ignoreEntry [Word7 1, Word7 2] @?= Right (Hlist [], [])
+  unpackHlist ignoreEntry [Word7 1, Word7 2, Word7 3] @?= Right (Hlist [], [Word7 3])
+
 tests :: TestTree
 tests = testGroup "Tests"
   [ testGetN
   , testGetUntil
   , testDefaultHlist
   , testPackHlist
+  , testUnpackHlist
   , parses "dx param change" dxParamChangeBytes dxParamChangeMsg
   , parses "dx bulk dump" dxBulkDumpBytes dxBulkDumpMsg
   , parses "dx200 param change" dx200ParamChangeBytes dx200ParamChangeMsg
