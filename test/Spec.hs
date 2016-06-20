@@ -167,6 +167,11 @@ testUnpackHlist = testCase "unpackHlist" $ do
   unpackHlist oneEntry [Word7 1] @?= Right (Hlist [("one", oneV 1)], [])
   unpackHlist oneEntry [Word7 1, Word7 2] @?= Right (Hlist [("one", oneV 1)], [Word7 2])
   unpackHlist oneEntry [Word7 0x70] @?= Left "error unpacking \"one\": 112 outside range [0, 96]"
+  unpackHlist twoEntry [] @?= Left "error unpacking \"two\": not enough bytes: 0 of 2"
+  unpackHlist twoEntry [Word7 0x00] @?= Left "error unpacking \"two\": not enough bytes: 1 of 2"
+  unpackHlist twoEntry [Word7 0x00, Word7 0x34] @?= Right (Hlist [("two", twoV 0x34)], [])
+  unpackHlist twoEntry [Word7 0x00, Word7 0x34, Word7 0x55] @?= Right (Hlist [("two", twoV 0x34)], [Word7 0x55])
+  unpackHlist twoEntry [Word7 0xF7, Word7 0x34] @?= Left "error unpacking \"two\": 247 outside range [0, 1]"
 
 tests :: TestTree
 tests = testGroup "Tests"
