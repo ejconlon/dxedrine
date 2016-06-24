@@ -1,8 +1,17 @@
 module Main where
 
+import Data.Binary
+import qualified Data.ByteString.Lazy as BL
 import Control.Monad (forM_, unless)
-import Dxedrine
-import TwoHundo
+import Control.Monad.IO.Class (MonadIO(..))
+import Dxedrine.Blocks
+import Dxedrine.Model
+import Dxedrine.Parsing
+
+parseDxUnions :: MonadIO m => m (ParseResult DxUnion)
+parseDxUnions = do
+  contents <- liftIO BL.getContents
+  return $ getRepeated get contents
 
 main :: IO ()
 main = do

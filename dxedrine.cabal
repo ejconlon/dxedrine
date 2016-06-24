@@ -15,11 +15,15 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Dxedrine, TwoHundo
+  exposed-modules:     Dxedrine.Blocks
+                     , Dxedrine.Hlists
+                     , Dxedrine.Model
+                     , Dxedrine.Parsing
+                     , Dxedrine.Words
   build-depends:       base >= 4.8 && < 5
+                     , aeson
                      , binary
                      , bytestring
-                     , transformers
                      , hmidi
   default-language:    Haskell2010
 
@@ -28,7 +32,10 @@ executable dxedrine-exe
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
+                     , binary
+                     , bytestring
                      , dxedrine
+                     , transformers
   default-language:    Haskell2010
 
 test-suite dxedrine-test

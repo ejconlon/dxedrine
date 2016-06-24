@@ -3,10 +3,13 @@ import Data.Binary.Get
 import Data.Binary.Put
 import qualified Data.ByteString.Lazy as BL
 import Data.Monoid ((<>))
-import Dxedrine
+import Dxedrine.Blocks
+import Dxedrine.Hlists
+import Dxedrine.Model
+import Dxedrine.Parsing
+import Dxedrine.Words
 import Test.Tasty
 import Test.Tasty.HUnit
-import TwoHundo
 
 dxParamChangeBytes :: BL.ByteString
 dxParamChangeBytes = BL.pack

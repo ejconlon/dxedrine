@@ -1,41 +1,29 @@
-module Dxedrine where
+module Dxedrine.Model where
 
 import Control.Applicative ((<|>))
 import Control.Monad (forM_, unless)
-import Control.Monad.IO.Class (MonadIO(..))
 import Data.Binary
-import Data.Binary.Get
-import Data.Binary.Put
-import Data.Bits ((.|.), (.&.), shiftL, shiftR, xor)
-import qualified Data.ByteString.Lazy as BL
-import Data.Maybe (isNothing)
+import Data.Binary.Get (isEmpty)
+import Data.Bits ((.&.), (.|.), xor)
 import Data.Word (Word8(..), Word16(..))
+import Dxedrine.Hlists
+import Dxedrine.Parsing
+import Dxedrine.Words
 
-newtype Word7 = Word7 { unWord7 :: Word8 } deriving (Show, Eq)
+sysexStart :: Word8
+sysexStart = 0xF0
 
-word7FromIntegral :: Integral a => a -> Word7
-word7FromIntegral i =
-  let w8 = fromIntegral i :: Word8
-  in Word7 (w8 .&. 0x7F)
+sysexEnd :: Word8
+sysexEnd = 0xF7
 
-word7ToInteger :: Word7 -> Integer
-word7ToInteger (Word7 w8) = toInteger w8
+yamahaManf :: Word7
+yamahaManf = Word7 0x43
 
-newtype Word14 = Word14 { unWord14 :: (Word7, Word7) } deriving (Show, Eq)
+system1Model :: Word7
+system1Model = Word7 0x62
 
-word14FromIntegral :: Integral a => a -> Word14
-word14FromIntegral i =
-  let w16 = fromIntegral i :: Word16
-      msb8 = fromIntegral (w16 `shiftR` 7) :: Word8
-      lsb8 = fromIntegral (w16 .&. 0x007F) :: Word8
-  in Word14 (word7FromIntegral msb8, word7FromIntegral lsb8)
-
-word14ToInteger :: Word14 -> Integer
-word14ToInteger (Word14 (Word7 msb8, Word7 lsb8)) =
-  let msb16 = fromIntegral msb8 :: Word16
-      lsb16 = fromIntegral lsb8 :: Word16
-      w16 = (msb16 `shiftL` 7) .|. lsb16
-  in toInteger w16
+system2Model :: Word7
+system2Model = Word7 0x6D
 
 newtype Address = Address
   { unAddress :: (Word7, Word7, Word7)
@@ -89,102 +77,6 @@ data DxUnion =
 newtype DxUnionList = DxUnionList
   { unDxUnionList :: [DxUnion]
   } deriving (Show, Eq)
-
-newtype ParseResult a = ParseResult
-  { unParseResult :: [(Either String a, ByteOffset)]
-  } deriving (Show, Eq)
-
-keepSuccessful :: ParseResult a -> [a]
-keepSuccessful (ParseResult rs) = do
-  (e, _) <- rs
-  case e of
-    Right a -> return a
-    _ -> mempty
-
-keepFailed :: ParseResult a -> [(String, ByteOffset)]
-keepFailed (ParseResult rs) = do
-  (e, o) <- rs
-  case e of
-    Left r -> return (r, o)
-    _ -> mempty
-
-sysexStart :: Word8
-sysexStart = 0xF0
-
-sysexEnd :: Word8
-sysexEnd = 0xF7
-
-yamahaManf :: Word7
-yamahaManf = Word7 0x43
-
-system1Model :: Word7
-system1Model = Word7 0x62
-
-system2Model :: Word7
-system2Model = Word7 0x6D
-
-getWord7 :: Get Word7
-getWord7 = do
-  x <- getWord8
-  if x .&. 0x80 == 0
-    then return $ Word7 x
-    else fail $ "Not a Word7: " ++ show x
-
-putWord7 :: Word7 -> Put
-putWord7 (Word7 w8) = putWord8 $ 0x7F .&. w8
-
-getWord14 :: Get Word14
-getWord14 = do
-  msb <- getWord7
-  lsb <- getWord7
-  return $ Word14 (msb, lsb)
-
-putWord14 :: Word14 -> Put
-putWord14 (Word14 (msb, lsb)) = do
-  putWord7 msb
-  putWord7 lsb
-
-blIsEmpty :: BL.ByteString -> Bool
-blIsEmpty s = isNothing $ BL.uncons s
-
-adjust :: [(x, ByteOffset)] -> [(x, ByteOffset)]
-adjust = go 0
-  where
-    go _ [] = []
-    go i ((z, o):ys) = let j = o + i in (z, j) : go j ys
-
-getRepeated :: Get a -> BL.ByteString -> ParseResult a
-getRepeated g s = ParseResult (adjust (go s))
-  where
-    go u =
-      if blIsEmpty u
-        then []
-        else
-          case runGetOrFail g u of
-            Left (t, o, e) -> (Left e, o) : go t
-            Right (t, o, a) -> (Right a, o) : go t
-
-getN :: Get a -> Integer -> Get [a]
-getN _ 0 = return []
-getN g i = do
-  x <- g
-  xs <- getN g (i - 1)
-  return $ x : xs
-
-getUntil :: Get a -> (a -> Bool) -> Get ([a], a)
-getUntil g p = do
-  f <- g
-  (a, b) <- go [] f
-  return (reverse a, b)
-  where
-    go xs z | p z = return (xs, z)
-            | otherwise = g >>= go (z:xs)
-
-runGetOrError :: Get a -> BL.ByteString -> Either String a
-runGetOrError g bs =
-  case runGetOrFail g bs of
-    Left (_, _, s) -> Left s
-    Right (_, _, a) -> Right a
 
 makeDbdChecksum :: DxBulkDump -> Word7
 makeDbdChecksum m =
@@ -374,8 +266,3 @@ instance Binary DxUnionList where
           else get >>= \x -> go (x : xs)
 
   put (DxUnionList us) = forM_ us put
-
-parseDxUnions :: MonadIO m => m (ParseResult DxUnion)
-parseDxUnions = do
-  contents <- liftIO BL.getContents
-  return $ getRepeated get contents
