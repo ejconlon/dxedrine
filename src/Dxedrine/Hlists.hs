@@ -1,6 +1,8 @@
 module Dxedrine.Hlists where
 
+import Control.Monad (replicateM_)
 import Dxedrine.Words
+import Data.Binary.Get
 import Data.Maybe (fromMaybe)
 import Data.Word (Word8(..), Word16(..))
 
@@ -13,7 +15,7 @@ data Range =
   deriving (Show, Eq)
 
 data Value =
-    IgnoreV
+    IgnoreV Int
   | OneV Word7
   | TwoV Word14
   deriving (Show, Eq)
@@ -37,6 +39,38 @@ defaultHlist entries = Hlist hvalues
         IgnoreR _ -> mempty
         _ -> return (_entryName e, _entryDefault e)
 
+getEntry :: Entry -> Get Value
+getEntry e =
+  let r = _entryRange e
+  in case r of
+    IgnoreR i -> do
+      replicateM_ i getWord8
+      return (IgnoreV i)
+    TwoR _ _ -> do
+      w <- getWord14
+      let v = TwoV w
+      case validate r v of
+        Nothing -> return v
+        Just reason -> fail reason
+    _ -> do
+      w <- getWord7
+      let v = OneV w
+      case validate r v of
+        Nothing -> return v
+        Just reason -> fail reason
+
+--putEntry :: Entry -> Value -> Put
+--putEntry v =
+
+getHlist :: [Entry] -> Get Hlist
+getHlist es = Hlist . reverse <$> go [] es
+  where
+    go hs [] = return hs
+    go hs (e:es) = do
+      h <- getEntry e
+      let n = _entryName e
+      go ((n, h):hs) es
+
 packValue' :: Range -> Value -> Either String [Word7]
 packValue' r v =
   case (r, v) of
@@ -55,7 +89,10 @@ packValue' r v =
           case packValue' e2 v of
             Right ys -> Right ys
             Left r2 -> Left $ "both " ++ r1 ++ " and " ++ r2
-    (IgnoreR i, IgnoreV) -> Right $ replicate i $ Word7 0x00
+    (IgnoreR i, IgnoreV j) ->
+      if i == j
+        then Right $ replicate i $ Word7 0x00
+        else Left $ "Unmatched ignore lengths: expected " ++ show i ++ " but was " ++ show j
     _ -> Left "wrong byte length"
 
 validate :: Range -> Value -> Maybe String
@@ -118,7 +155,7 @@ unpackHlist = go []
             Just pp -> go (pp : hl) es xs
 
 reserved :: Int -> Entry
-reserved i = Entry "reserved" (IgnoreR i) IgnoreV
+reserved i = Entry "reserved" (IgnoreR i) (IgnoreV i)
 
 entry :: Range -> Value -> String -> Entry
 entry range value name = Entry name range value
