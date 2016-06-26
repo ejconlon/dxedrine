@@ -145,20 +145,18 @@ testDefaultHlist = testCase "defaultHlist" $ do
 
 testPackHlist :: TestTree
 testPackHlist = testCase "packHlist" $ do
-  packHlist False oneEntry (Hlist []) @?= Left "field \"one\" missing"
-  packHlist True oneEntry (Hlist []) @?= Right [Word7 0x10]
-  packHlist True oneEntry (Hlist [("one", oneV 0x12)]) @?= Right [Word7 0x12]
-  packHlist True oneEntry (Hlist [("one", oneV 0x70)]) @?= Left "field \"one\" invalid: 112 outside range [0, 96]"
-  packHlist True twoEntry (Hlist []) @?= Right [Word7 0x00, Word7 0x3C]
-  packHlist True twoEntry (Hlist [("two", twoV 0x34)]) @?= Right [Word7 0x00, Word7 0x34]
-  packHlist True enumEntry (Hlist []) @?= Right [Word7 0x03]
-  packHlist True enumEntry (Hlist [("enum", oneV 0x01)]) @?= Right [Word7 0x01]
-  packHlist True multiEntry (Hlist []) @?= Right [Word7 0x10]
-  packHlist True multiEntry (Hlist [("multi", oneV 0x09)]) @?= Right [Word7 0x09]
-  packHlist True multiEntry (Hlist [("multi", oneV 0x70)]) @?= Right [Word7 0x70]
-  packHlist True ignoreEntry (Hlist []) @?= Right [Word7 0x00, Word7 0x00]
-  packHlist False ignoreEntry (Hlist []) @?= Right [Word7 0x00, Word7 0x00]
-  packHlist True (oneEntry ++ twoEntry) (Hlist []) @?= Right [Word7 0x10, Word7 0x00, Word7 0x3C]
+  packHlist oneEntry (Hlist []) @?= Left "field \"one\" missing"
+  packHlist oneEntry (Hlist [("one", oneV 0x12)]) @?= Right [Word7 0x12]
+  packHlist oneEntry (Hlist [("one", oneV 0x70)]) @?= Left "field \"one\" invalid: 112 outside range [0, 96]"
+  packHlist twoEntry (Hlist []) @?= Left "field \"two\" missing"
+  packHlist twoEntry (Hlist [("two", twoV 0x34)]) @?= Right [Word7 0x00, Word7 0x34]
+  packHlist enumEntry (Hlist []) @?= Left "field \"enum\" missing"
+  packHlist enumEntry (Hlist [("enum", oneV 0x01)]) @?= Right [Word7 0x01]
+  packHlist multiEntry (Hlist []) @?= Left "field \"multi\" missing"
+  packHlist multiEntry (Hlist [("multi", oneV 0x09)]) @?= Right [Word7 0x09]
+  packHlist multiEntry (Hlist [("multi", oneV 0x70)]) @?= Right [Word7 0x70]
+  packHlist ignoreEntry (Hlist []) @?= Right []
+  packHlist (oneEntry ++ twoEntry) (Hlist [("one", oneV 0x12), ("two", twoV 0x34)]) @?= Right [Word7 0x12, Word7 0x00, Word7 0x34]
 
 testUnpackHlist :: TestTree
 testUnpackHlist = testCase "unpackHlist" $ do

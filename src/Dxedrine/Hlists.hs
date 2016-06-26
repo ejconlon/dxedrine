@@ -60,6 +60,22 @@ validate r v =
         else Left $ "Unmatched ignore lengths: expected " ++ show i ++ " but was " ++ show j
     _ -> Left "wrong byte length"
 
+validateHlist :: [Entry] -> Hlist -> Either String ()
+validateHlist es (Hlist hs) = go es
+  where
+    go [] = return ()
+    go (e:es) =
+      let r = _entryRange e
+      in case r of
+        IgnoreR _ -> go es
+        _ -> let n = _entryName e
+          in case lookup n hs of
+            Nothing -> Left $ "field \"" ++ n ++ "\" missing"
+            Just v -> do
+              case validate (_entryRange e) v of
+                Left reason -> Left $ "field \"" ++ n ++ "\" invalid: " ++ reason
+                _ -> go es
+
 addDefaults :: [Entry] -> Hlist -> Hlist
 addDefaults es (Hlist hs) = Hlist $ go es hs
   where
@@ -112,64 +128,20 @@ getHlist es = Hlist . reverse <$> go [] es
 putHlist :: Hlist -> Put
 putHlist (Hlist hs) = forM_ hs (\(_, h) -> putValue h)
 
-packValue' :: Range -> Value -> Either String [Word7]
-packValue' r v =
-  case validate r v of
+packValue :: Entry -> Value -> Either String [Word7]
+packValue e v =
+  let r = _entryRange e
+  in case validate r v of
     Left reason -> Left reason
     _ -> Right $ Word7 <$> (BL.unpack $ runPut $ putValue v)
 
-packValue :: Entry -> Value -> Either String [Word7]
-packValue e v = packValue' (_entryRange e) v
-
-packHlist :: Bool -> [Entry] -> Hlist -> Either String [Word7]
-packHlist useDefault entries hlist = go entries []
-  where
-    go [] xs = Right xs
-    go (e:es) xs =
-      let v = lookup (_entryName e) (unHlist hlist)
-      in case (useDefault, v) of
-        (False, Nothing) ->
-          case _entryRange e of
-            IgnoreR i -> go es (xs ++ (replicate i (Word7 0x00)))
-            _ -> Left $ "field \"" ++ _entryName e ++ "\" missing"
-        _ -> let vv = fromMaybe (_entryDefault e) v
-             in case packValue e vv of
-               Left r -> Left $ "field \"" ++ _entryName e ++ "\" invalid: " ++ r
-               Right ys -> go es (xs ++ ys)
-
-unpackHlist' :: Entry -> [Word7] -> Either String (Maybe (String, Value), [Word7])
-unpackHlist' e ws =
-  case (_entryRange e) of
-    IgnoreR i ->
-      if length ws >= i
-        then Right (Nothing, drop i ws)
-        else Left $ "not enough bytes: " ++ show (length ws) ++ " of " ++ show i
-    TwoR _ _ ->
-      if length ws >= 2
-        then let v = TwoV (Word14 ((head ws), (head (tail ws))))
-             in do
-                _ <- packValue' (_entryRange e) v
-                return (Just (_entryName e, v), drop 2 ws)
-        else Left $ "not enough bytes: " ++ show (length ws) ++ " of 2"
-    _ ->
-      if length ws >= 1
-        then let v = OneV (head ws)
-              in do
-                _ <- packValue' (_entryRange e) v
-                return (Just (_entryName e, v), drop 1 ws)
-        else Left $ "empty"
+packHlist :: [Entry] -> Hlist -> Either String [Word7]
+packHlist entries hlist = do
+  _ <- validateHlist entries hlist
+  return $ Word7 <$> (BL.unpack $ runPut $ putHlist hlist)
 
 unpackHlist :: [Entry] -> [Word7] -> Either String (Hlist, [Word7])
-unpackHlist = go []
-  where
-    go hl [] ws = Right (Hlist (reverse hl), ws)
-    go hl (e:es) ws =
-      case unpackHlist' e ws of
-        Left r -> Left $ "error unpacking \"" ++ _entryName e ++ "\": " ++ r
-        Right (p, xs) ->
-          case p of
-            Nothing -> go hl es xs
-            Just pp -> go (pp : hl) es xs
+unpackHlist _ _ = Left "TODO"
 
 reserved :: Int -> Entry
 reserved i = Entry "reserved" (IgnoreR i) (IgnoreV i)
