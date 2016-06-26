@@ -4,6 +4,7 @@ import Control.Monad (forM_, replicateM_)
 import Dxedrine.Words
 import Data.Binary.Get
 import Data.Binary.Put
+import qualified Data.ByteString.Lazy as BL
 import Data.Maybe (fromMaybe)
 import Data.Word (Word8(..), Word16(..))
 
@@ -113,28 +114,9 @@ putHlist (Hlist hs) = forM_ hs (\(_, h) -> putValue h)
 
 packValue' :: Range -> Value -> Either String [Word7]
 packValue' r v =
-  case (r, v) of
-    (OneR s e, OneV w@(Word7 x)) ->
-      if (x >= s && x <= e) then Right [w] else Left $ show x ++ " outside range [" ++ show s ++ ", " ++ show e ++ "]"
-    (TwoR e1 e2, TwoV w@(Word14 (x, y))) -> do
-      xs <- packValue' e1 (OneV x)
-      ys <- packValue' e2 (OneV y)
-      return $ xs ++ ys
-    (EnumR vals, OneV w@(Word7 x)) ->
-      if (x `elem` vals) then Right [w] else Left $ show x ++ " not an element of " ++ show vals
-    (MultiR e1 e2, OneV w@(Word7 x)) ->
-      case packValue' e1 v of
-        Right xs -> Right xs
-        Left r1 ->
-          case packValue' e2 v of
-            Right ys -> Right ys
-            Left r2 -> Left $ "both " ++ r1 ++ " and " ++ r2
-    (IgnoreR i, IgnoreV j) ->
-      if i == j
-        then Right $ replicate i $ Word7 0x00
-        else Left $ "Unmatched ignore lengths: expected " ++ show i ++ " but was " ++ show j
-    _ -> Left "wrong byte length"
-
+  case validate r v of
+    Left reason -> Left reason
+    _ -> Right $ Word7 <$> (BL.unpack $ runPut $ putValue v)
 
 packValue :: Entry -> Value -> Either String [Word7]
 packValue e v = packValue' (_entryRange e) v
