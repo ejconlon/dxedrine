@@ -36,7 +36,7 @@ dxBulkDumpMsg = DxBulkDump
   { _dbdManf   = Word7 0x43
   , _dbdDevice = Word7 0x00
   , _dbdFormat = Word7 0x62
-  , _dbdData   = Word7 <$> [0x03, 0x00, 0x01, 0x0C, 0x32]
+  , _dbdData   = BL.pack [0x03, 0x00, 0x01, 0x0C, 0x32]
   }
 
 dx200ParamChangeBytes :: BL.ByteString
@@ -51,7 +51,7 @@ dx200ParamChangeMsg = Dx200ParamChange
   , _d2pcDevice = Word7 0x00
   , _d2pcModel  = Word7 0x62
   , _d2pcAddr   = Address (Word7 0x21, Word7 0x7F, Word7 0x00)
-  , _d2pcData   = Word7 <$> [0x03, 0x00, 0x01, 0x0C, 0x32]
+  , _d2pcData   = BL.pack [0x03, 0x00, 0x01, 0x0C, 0x32]
   }
 
 dx200BulkDumpBytes :: BL.ByteString
@@ -66,7 +66,7 @@ dx200BulkDumpMsg = Dx200BulkDump
   , _d2bdDevice = Word7 0x00
   , _d2bdModel  = Word7 0x62
   , _d2bdAddr   = Address (Word7 0x21, Word7 0x7F, Word7 0x00)
-  , _d2bdData   = Word7 <$> [0x03, 0x00, 0x01, 0x0C, 0x32]
+  , _d2bdData   = BL.pack [0x03, 0x00, 0x01, 0x0C, 0x32]
   }
 
 dxPackedBytes :: BL.ByteString

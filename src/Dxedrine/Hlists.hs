@@ -1,8 +1,9 @@
 module Dxedrine.Hlists where
 
-import Control.Monad (replicateM_)
+import Control.Monad (forM_, replicateM_)
 import Dxedrine.Words
 import Data.Binary.Get
+import Data.Binary.Put
 import Data.Maybe (fromMaybe)
 import Data.Word (Word8(..), Word16(..))
 
@@ -30,17 +31,49 @@ newtype Hlist = Hlist
   { unHlist :: [(String, Value)]
   } deriving (Show, Eq)
 
-defaultHlist :: [Entry] -> Hlist
-defaultHlist entries = Hlist hvalues
-  where
-    hvalues = do
-      e <- entries
-      case (_entryRange e) of
-        IgnoreR _ -> mempty
-        _ -> return (_entryName e, _entryDefault e)
+validate :: Range -> Value -> Either String ()
+validate r v =
+  case (r, v) of
+    (OneR s e, OneV w@(Word7 x)) ->
+      if (x >= s && x <= e)
+        then return ()
+        else Left $ show x ++ " outside range [" ++ show s ++ ", " ++ show e ++ "]"
+    (TwoR e1 e2, TwoV w@(Word14 (x, y))) -> do
+      _ <- validate e1 (OneV x)
+      _ <- validate e2 (OneV y)
+      return ()
+    (EnumR vals, OneV w@(Word7 x)) ->
+      if (x `elem` vals)
+        then return ()
+        else Left $ show x ++ " not an element of " ++ show vals
+    (MultiR e1 e2, OneV w@(Word7 x)) -> do
+      case validate e1 v of
+        Right _ -> return ()
+        Left r1 ->
+          case validate e2 v of
+            Right _ -> return ()
+            Left r2 -> Left $ "both " ++ r1 ++ " and " ++ r2
+    (IgnoreR i, IgnoreV j) ->
+      if i == j
+        then return ()
+        else Left $ "Unmatched ignore lengths: expected " ++ show i ++ " but was " ++ show j
+    _ -> Left "wrong byte length"
 
-getEntry :: Entry -> Get Value
-getEntry e =
+addDefaults :: [Entry] -> Hlist -> Hlist
+addDefaults es (Hlist hs) = Hlist $ go es hs
+  where
+    go [] hs = hs
+    go (e:es) hs =
+      case (_entryRange e) of
+        IgnoreR i -> go es hs
+        _ -> let n = _entryName e
+             in (n, fromMaybe (_entryDefault e) (lookup n hs)):(go es hs)
+
+defaultHlist :: [Entry] -> Hlist
+defaultHlist es = addDefaults es (Hlist [])
+
+getValue :: Entry -> Get Value
+getValue e =
   let r = _entryRange e
   in case r of
     IgnoreR i -> do
@@ -50,26 +83,33 @@ getEntry e =
       w <- getWord14
       let v = TwoV w
       case validate r v of
-        Nothing -> return v
-        Just reason -> fail reason
+        Right _ -> return v
+        Left reason -> fail reason
     _ -> do
       w <- getWord7
       let v = OneV w
       case validate r v of
-        Nothing -> return v
-        Just reason -> fail reason
+        Right _ -> return v
+        Left reason -> fail reason
 
---putEntry :: Entry -> Value -> Put
---putEntry v =
+putValue :: Value -> Put
+putValue v =
+  case v of
+    IgnoreV i -> replicateM_ i $ putWord8 0x00
+    OneV v -> putWord7 v
+    TwoV v -> putWord14 v
 
 getHlist :: [Entry] -> Get Hlist
 getHlist es = Hlist . reverse <$> go [] es
   where
     go hs [] = return hs
     go hs (e:es) = do
-      h <- getEntry e
+      h <- getValue e
       let n = _entryName e
       go ((n, h):hs) es
+
+putHlist :: Hlist -> Put
+putHlist (Hlist hs) = forM_ hs (\(_, h) -> putValue h)
 
 packValue' :: Range -> Value -> Either String [Word7]
 packValue' r v =
@@ -95,11 +135,6 @@ packValue' r v =
         else Left $ "Unmatched ignore lengths: expected " ++ show i ++ " but was " ++ show j
     _ -> Left "wrong byte length"
 
-validate :: Range -> Value -> Maybe String
-validate r v =
-  case packValue' r v of
-    Left x -> Just x
-    _ -> Nothing
 
 packValue :: Entry -> Value -> Either String [Word7]
 packValue e v = packValue' (_entryRange e) v
