@@ -160,28 +160,28 @@ testPackHlist = testCase "packHlist" $ do
 
 testUnpackHlist :: TestTree
 testUnpackHlist = testCase "unpackHlist" $ do
-  unpackHlist ignoreEntry [] @?= Left "error unpacking \"reserved\": not enough bytes: 0 of 2"
-  unpackHlist ignoreEntry [Word7 1] @?= Left "error unpacking \"reserved\": not enough bytes: 1 of 2"
+  unpackHlist ignoreEntry [] @?= Left "not enough bytes"
+  unpackHlist ignoreEntry [Word7 1] @?= Left "not enough bytes"
   unpackHlist ignoreEntry [Word7 1, Word7 2] @?= Right (Hlist [], [])
   unpackHlist ignoreEntry [Word7 1, Word7 2, Word7 3] @?= Right (Hlist [], [Word7 3])
-  unpackHlist oneEntry [] @?= Left "error unpacking \"one\": empty"
+  unpackHlist oneEntry [] @?= Left "not enough bytes"
   unpackHlist oneEntry [Word7 1] @?= Right (Hlist [("one", oneV 1)], [])
   unpackHlist oneEntry [Word7 1, Word7 2] @?= Right (Hlist [("one", oneV 1)], [Word7 2])
-  unpackHlist oneEntry [Word7 0x70] @?= Left "error unpacking \"one\": 112 outside range [0, 96]"
-  unpackHlist twoEntry [] @?= Left "error unpacking \"two\": not enough bytes: 0 of 2"
-  unpackHlist twoEntry [Word7 0x00] @?= Left "error unpacking \"two\": not enough bytes: 1 of 2"
+  unpackHlist oneEntry [Word7 0x70] @?= Left "112 outside range [0, 96]"
+  unpackHlist twoEntry [] @?= Left "not enough bytes"
+  unpackHlist twoEntry [Word7 0x00] @?= Left "not enough bytes"
   unpackHlist twoEntry [Word7 0x00, Word7 0x34] @?= Right (Hlist [("two", twoV 0x34)], [])
   unpackHlist twoEntry [Word7 0x00, Word7 0x34, Word7 0x55] @?= Right (Hlist [("two", twoV 0x34)], [Word7 0x55])
-  unpackHlist twoEntry [Word7 0xF7, Word7 0x34] @?= Left "error unpacking \"two\": 247 outside range [0, 1]"
-  unpackHlist enumEntry [] @?= Left "error unpacking \"enum\": empty"
+  unpackHlist twoEntry [Word7 0xF7, Word7 0x34] @?= Left "Not a Word7: 247"
+  unpackHlist enumEntry [] @?= Left "not enough bytes"
   unpackHlist enumEntry [Word7 0x01] @?= Right (Hlist [("enum", oneV 0x01)], [])
   unpackHlist enumEntry [Word7 0x01, Word7 0x55] @?= Right (Hlist [("enum", oneV 0x01)], [Word7 0x55])
-  unpackHlist enumEntry [Word7 0x55] @?= Left "error unpacking \"enum\": 85 not an element of [1,3]"
+  unpackHlist enumEntry [Word7 0x55] @?= Left "85 not an element of [1,3]"
   unpackHlist (oneEntry ++ enumEntry) [Word7 0x01, Word7 0x03, Word7 0x66] @?= Right (Hlist [("one", oneV 0x01), ("enum", oneV 0x03)], [Word7 0x66])
-  unpackHlist multiEntry [] @?= Left "error unpacking \"multi\": empty"
+  unpackHlist multiEntry [] @?= Left "not enough bytes"
   unpackHlist multiEntry [Word7 0x09] @?= Right (Hlist [("multi", oneV 0x09)], [])
   unpackHlist multiEntry [Word7 0x70] @?= Right (Hlist [("multi", oneV 0x70)], [])
-  unpackHlist multiEntry [Word7 0x71] @?= Left "error unpacking \"multi\": both 113 outside range [0, 96] and 113 not an element of [112,128]"
+  unpackHlist multiEntry [Word7 0x71] @?= Left "both 113 outside range [0, 96] and 113 not an element of [112,128]"
 
 tests :: TestTree
 tests = testGroup "Tests"

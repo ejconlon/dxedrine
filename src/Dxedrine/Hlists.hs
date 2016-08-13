@@ -2,6 +2,7 @@ module Dxedrine.Hlists where
 
 import Control.Monad (forM_, replicateM_)
 import Dxedrine.Words
+import Data.Binary
 import Data.Binary.Get
 import Data.Binary.Put
 import qualified Data.ByteString.Lazy as BL
@@ -141,7 +142,14 @@ packHlist entries hlist = do
   return $ Word7 <$> (BL.unpack $ runPut $ putHlist hlist)
 
 unpackHlist :: [Entry] -> [Word7] -> Either String (Hlist, [Word7])
-unpackHlist _ _ = Left "TODO"
+unpackHlist es ws =
+  unpack $ runGetOrFail (getHlist es) (BL.pack $ unWord7 <$> ws)
+  where
+    unpack (Left (_, _, e)) = Left e
+    unpack (Right (left, _, h)) = Right (nonIgnored h, Word7 <$> BL.unpack left)
+    nonIgnored (Hlist hs) = Hlist $ filter (\(_, h) -> shouldKeep h) hs
+    shouldKeep (IgnoreV _) = False
+    shouldKeep _ = True
 
 reserved :: Int -> Entry
 reserved i = Entry "reserved" (IgnoreR i) (IgnoreV i)
