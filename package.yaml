@@ -12,6 +12,10 @@ synopsis:            A Yamaha DX200 patch editor
 extra-source-files:
 - README.md
 
+data-files:
+- static/css/*.css
+- static/css/*.png
+
 description: Please see the README on GitHub at <https://github.com/ejconlon/dxedrine#readme>
 
 dependencies:
@@ -19,6 +23,7 @@ dependencies:
 - aeson >=1.4 && <2
 - binary >=0.8 && <1
 - bytestring >=0.10 && <1
+- filepath >=1.4 && <2
 - threepenny-gui >=0.9 && <1
 
 ghc-options:

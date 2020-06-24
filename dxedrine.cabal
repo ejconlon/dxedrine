@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: be90bb8cfddbdad8e7b3b0806c8bebbfe37c1ac6585573666a485569378e8c0b
+-- hash: 924ceda81228b1493ff1823f0b8424347bde06bfb3a512e1440414c592ad45cf
 
 name:           dxedrine
 version:        0.1.0
@@ -21,6 +21,9 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
+data-files:
+    static/css/buttons.css
+    static/css/stripes-bg.png
 
 source-repository head
   type: git
@@ -33,6 +36,7 @@ library
       Dxedrine.Hlists
       Dxedrine.Model
       Dxedrine.Parsing
+      Dxedrine.Paths
       Dxedrine.UiMain
       Dxedrine.Words
   other-modules:
@@ -45,6 +49,7 @@ library
     , base >=4.12 && <5
     , binary >=0.8 && <1
     , bytestring >=0.10 && <1
+    , filepath >=1.4 && <2
     , threepenny-gui >=0.9 && <1
   default-language: Haskell2010
 
@@ -61,6 +66,7 @@ executable dxedrine-exe
     , binary >=0.8 && <1
     , bytestring >=0.10 && <1
     , dxedrine
+    , filepath >=1.4 && <2
     , threepenny-gui >=0.9 && <1
   default-language: Haskell2010
 
@@ -78,6 +84,7 @@ test-suite dxedrine-test
     , binary >=0.8 && <1
     , bytestring >=0.10 && <1
     , dxedrine
+    , filepath >=1.4 && <2
     , tasty
     , tasty-hunit
     , threepenny-gui >=0.9 && <1

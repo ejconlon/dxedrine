@@ -2,15 +2,18 @@ module Dxedrine.UiMain (main) where
 
 import Control.Monad (void)
 import Control.Concurrent (threadDelay)
+import Dxedrine.Paths (getStaticDir)
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
 main :: IO ()
-main = startGUI defaultConfig setup
+main = do
+  static <- getStaticDir
+  startGUI (defaultConfig { jsStatic = Just static }) setup
 
 setup :: Window -> UI ()
 setup w = void $ do
-  pure w # set title "Buttons"
+  void (pure w # set title "Buttons")
   UI.addStyleSheet w "buttons.css"
 
   buttons <- mkButtons
@@ -40,7 +43,7 @@ mkButtons = do
   on UI.leave button1 $ \_ -> do
     element button1 # set text button1Title
   on UI.click button1 $ \_ -> do
-    element button1 # set text (button1Title ++ " [pressed]")
+    void (element button1 # set text (button1Title ++ " [pressed]"))
     liftIO $ threadDelay $ 1000 * 1000 * 1
     element list    #+ [UI.li # set html "<b>Delayed</b> result!"]
 
@@ -51,7 +54,7 @@ mkButtons = do
   on UI.leave button2 $ \_ -> do
     element button2 # set text button2Title
   on UI.click button2 $ \_ -> do
-    element button2 # set text (button2Title ++ " [pressed]")
+    void (element button2 # set text (button2Title ++ " [pressed]"))
     element list    #+ [UI.li # set html "Zap! Quick result!"]
 
   pure [list, view1, view2]
