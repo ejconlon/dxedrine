@@ -1,7 +1,7 @@
 module Dxedrine.Blocks where
 
 import Data.Bits ((.&.))
-import Data.Word
+import Data.Word (Word16, Word8)
 import Dxedrine.Hlists
 import Dxedrine.Model
 import Dxedrine.Words

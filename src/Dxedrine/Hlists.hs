@@ -1,9 +1,9 @@
 module Dxedrine.Hlists where
 
 import Control.Monad (forM_, replicateM_)
-import Data.Binary
-import Data.Binary.Get
-import Data.Binary.Put
+import Data.Binary (Get, Put, getWord8, putWord8)
+import Data.Binary.Get (runGetOrFail)
+import Data.Binary.Put (runPut)
 import qualified Data.ByteString.Lazy as BL
 import Data.Maybe (fromMaybe)
 import Data.Word (Word16, Word8)

@@ -2,10 +2,11 @@ module Dxedrine.Model where
 
 import Control.Applicative ((<|>))
 import Control.Monad (forM_, unless)
-import Data.Binary
+import Data.Binary (Binary (..), getWord8, putWord8)
 import Data.Binary.Get (isEmpty)
 import Data.Bits (xor, (.&.), (.|.))
-import qualified Data.ByteString.Lazy as BL
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
 import Data.Word (Word8)
 import Dxedrine.Parsing
 import Dxedrine.Words
@@ -48,7 +49,7 @@ data DxBulkDump = DxBulkDump
   { _dbdManf :: !Word7
   , _dbdDevice :: !Word7
   , _dbdFormat :: !Word7
-  , _dbdData :: !BL.ByteString
+  , _dbdData :: !ByteString
   } deriving (Show, Eq)
 
 data Dx200ParamChange = Dx200ParamChange
@@ -56,7 +57,7 @@ data Dx200ParamChange = Dx200ParamChange
   , _d2pcDevice :: !Word7
   , _d2pcModel :: !Word7
   , _d2pcAddr :: !Address
-  , _d2pcData :: !BL.ByteString
+  , _d2pcData :: !ByteString
   } deriving (Show, Eq)
 
 data Dx200BulkDump = Dx200BulkDump
@@ -64,7 +65,7 @@ data Dx200BulkDump = Dx200BulkDump
   , _d2bdDevice :: !Word7
   , _d2bdModel :: !Word7
   , _d2bdAddr :: !Address
-  , _d2bdData :: !BL.ByteString
+  , _d2bdData :: !ByteString
   } deriving (Show, Eq)
 
 data DxUnion =
@@ -81,20 +82,20 @@ newtype DxUnionList = DxUnionList
 makeDbdChecksum :: DxBulkDump -> Word7
 makeDbdChecksum m =
   let dataa = _dbdData m
-      value = sum (BL.unpack dataa)
+      value = sum (BS.unpack dataa)
   in Word7 $ ((0xFF `xor` value) + 1) .&. 0x7F
 
 makeD2bdChecksum :: Dx200BulkDump -> Word7
 makeD2bdChecksum m =
   let dataa = _d2bdData m
-      count = unWord14 $ word14FromIntegral (BL.length dataa)
+      count = unWord14 $ word14FromIntegral (BS.length dataa)
       countMSB = unWord7 (fst count)
       countLSB = unWord7 (snd count)
       (addrHigh, addrMid, addrLow) = unAddress $ _d2bdAddr m
       value = unWord7 addrHigh +
               unWord7 addrMid +
               unWord7 addrLow +
-              countMSB + countLSB + sum (BL.unpack dataa)
+              countMSB + countLSB + sum (BS.unpack dataa)
   in Word7 $ ((0xFF `xor` value) + 1) .&. 0x7F
 
 instance Binary DxParamChange where
@@ -143,7 +144,7 @@ instance Binary DxBulkDump where
             { _dbdManf = manf
             , _dbdDevice = Word7 deviceRaw
             , _dbdFormat = format
-            , _dbdData = BL.pack $ unWord7 <$> dataa
+            , _dbdData = BS.pack $ unWord7 <$> dataa
             }
         checkChecksum = makeDbdChecksum m
     if checksum == checkChecksum
@@ -159,8 +160,8 @@ instance Binary DxBulkDump where
     putWord7 $ _dbdDevice m
     putWord7 $ _dbdFormat m
     let dataa = _dbdData m
-    putWord14 $ word14FromIntegral $ BL.length dataa
-    forM_ (BL.unpack dataa) putWord8
+    putWord14 $ word14FromIntegral $ BS.length dataa
+    forM_ (BS.unpack dataa) putWord8
     putWord7 $ makeDbdChecksum m
     putWord8 sysexEnd
 
@@ -182,7 +183,7 @@ instance Binary Dx200ParamChange where
       , _d2pcDevice = Word7 $ deviceRaw .&. 0x0F
       , _d2pcModel = model
       , _d2pcAddr = Address (addrHigh, addrMid, addrLow)
-      , _d2pcData = BL.pack dataa
+      , _d2pcData = BS.pack dataa
       }
 
   put m = do
@@ -195,7 +196,7 @@ instance Binary Dx200ParamChange where
     putWord7 addrMid
     putWord7 addrLow
     let dataa = _d2pcData m
-    forM_ (BL.unpack dataa) putWord8
+    forM_ (BS.unpack dataa) putWord8
     putWord8 sysexEnd
 
 instance Binary Dx200BulkDump where
@@ -219,7 +220,7 @@ instance Binary Dx200BulkDump where
             , _d2bdDevice = Word7 deviceRaw
             , _d2bdModel = model
             , _d2bdAddr = Address (addrHigh, addrMid, addrLow)
-            , _d2bdData = BL.pack $ unWord7 <$> dataa
+            , _d2bdData = BS.pack $ unWord7 <$> dataa
             }
         checkChecksum = makeD2bdChecksum m
     if checksum == checkChecksum
@@ -235,12 +236,12 @@ instance Binary Dx200BulkDump where
     putWord7 $ _d2bdDevice m
     putWord7 $ _d2bdModel m
     let dataa = _d2bdData m
-    putWord14 $ word14FromIntegral $ BL.length dataa
+    putWord14 $ word14FromIntegral $ BS.length dataa
     let (addrHigh, addrMid, addrLow) = unAddress $ _d2bdAddr m
     putWord7 addrHigh
     putWord7 addrMid
     putWord7 addrLow
-    forM_ (BL.unpack dataa) putWord8
+    forM_ (BS.unpack dataa) putWord8
     putWord7 $ makeD2bdChecksum m
     putWord8 sysexEnd
 

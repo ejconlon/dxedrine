@@ -1,7 +1,6 @@
 module Dxedrine.Words where
 
-import Data.Binary.Get
-import Data.Binary.Put
+import Data.Binary (Get, Put, getWord8, putWord8)
 import Data.Bits (shiftL, shiftR, (.&.), (.|.))
 import Data.Word (Word16, Word8)
 
