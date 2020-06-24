@@ -1,7 +1,7 @@
 module Dxedrine.Parsing where
 
-import qualified Data.ByteString.Lazy as BL
 import Data.Binary.Get (ByteOffset, Get, runGetOrFail)
+import qualified Data.ByteString.Lazy as BL
 import Data.Maybe (isNothing)
 
 newtype ParseResult a = ParseResult

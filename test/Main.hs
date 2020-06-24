@@ -1,9 +1,8 @@
+module Main (main) where
+
 import Data.Binary
-import Data.Binary.Get
 import Data.Binary.Put
 import qualified Data.ByteString.Lazy as BL
-import Data.Monoid ((<>))
-import Dxedrine.Blocks
 import Dxedrine.Hlists
 import Dxedrine.Model
 import Dxedrine.Parsing

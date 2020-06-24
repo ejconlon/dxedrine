@@ -4,10 +4,9 @@ import Control.Applicative ((<|>))
 import Control.Monad (forM_, unless)
 import Data.Binary
 import Data.Binary.Get (isEmpty)
-import Data.Bits ((.&.), (.|.), xor)
+import Data.Bits (xor, (.&.), (.|.))
 import qualified Data.ByteString.Lazy as BL
-import Data.Word (Word8(..), Word16(..))
-import Dxedrine.Hlists
+import Data.Word (Word8)
 import Dxedrine.Parsing
 import Dxedrine.Words
 
@@ -38,41 +37,41 @@ mkAddress i8 j8 k8 =
   in Address (i7, j7, k7)
 
 data DxParamChange = DxParamChange
-  { _dpcManf :: Word7
-  , _dpcDevice :: Word7
-  , _dpcParamGroup :: Word7
-  , _dpcParam :: Word7
-  , _dpcData :: Word7
+  { _dpcManf :: !Word7
+  , _dpcDevice :: !Word7
+  , _dpcParamGroup :: !Word7
+  , _dpcParam :: !Word7
+  , _dpcData :: !Word7
   } deriving (Show, Eq)
 
 data DxBulkDump = DxBulkDump
-  { _dbdManf :: Word7
-  , _dbdDevice :: Word7
-  , _dbdFormat :: Word7
-  , _dbdData :: BL.ByteString
+  { _dbdManf :: !Word7
+  , _dbdDevice :: !Word7
+  , _dbdFormat :: !Word7
+  , _dbdData :: !BL.ByteString
   } deriving (Show, Eq)
 
 data Dx200ParamChange = Dx200ParamChange
-  { _d2pcManf :: Word7
-  , _d2pcDevice :: Word7
-  , _d2pcModel :: Word7
-  , _d2pcAddr :: Address
-  , _d2pcData :: BL.ByteString
+  { _d2pcManf :: !Word7
+  , _d2pcDevice :: !Word7
+  , _d2pcModel :: !Word7
+  , _d2pcAddr :: !Address
+  , _d2pcData :: !BL.ByteString
   } deriving (Show, Eq)
 
 data Dx200BulkDump = Dx200BulkDump
-  { _d2bdManf :: Word7
-  , _d2bdDevice :: Word7
-  , _d2bdModel :: Word7
-  , _d2bdAddr :: Address
-  , _d2bdData :: BL.ByteString
+  { _d2bdManf :: !Word7
+  , _d2bdDevice :: !Word7
+  , _d2bdModel :: !Word7
+  , _d2bdAddr :: !Address
+  , _d2bdData :: !BL.ByteString
   } deriving (Show, Eq)
 
 data DxUnion =
-    DPC  DxParamChange
-  | DBD  DxBulkDump
-  | D2PC Dx200ParamChange
-  | D2BD Dx200BulkDump
+    DPC  !DxParamChange
+  | DBD  !DxBulkDump
+  | D2PC !Dx200ParamChange
+  | D2BD !Dx200BulkDump
   deriving (Show, Eq)
 
 newtype DxUnionList = DxUnionList
@@ -252,10 +251,10 @@ instance Binary DxUnion where
     <|> (D2BD <$> get)
 
   put m = case m of
-    DPC m  -> put m
-    DBD m  -> put m
-    D2PC m -> put m
-    D2BD m -> put m
+    DPC x  -> put x
+    DBD x  -> put x
+    D2PC x -> put x
+    D2BD x -> put x
 
 instance Binary DxUnionList where
   get = DxUnionList . reverse <$> go []

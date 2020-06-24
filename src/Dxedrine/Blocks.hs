@@ -7,17 +7,17 @@ import Dxedrine.Model
 import Dxedrine.Words
 
 data Block = Block
-  { _blockName :: String
-  , _blockAddress :: Address
-  , _blockEntries :: [Entry]
+  { _blockName :: !String
+  , _blockAddress :: !Address
+  , _blockEntries :: ![Entry]
   } deriving (Show, Eq)
 
 -- TODO move to Word7/Word16
 data Context = Context
-  { _contextSong :: Maybe Word8
-  , _contextMeasure :: Maybe Word16
-  , _contextPart :: Maybe Word8
-  , _contextPattern :: Maybe Word8
+  { _contextSong :: !(Maybe Word8)
+  , _contextMeasure :: !(Maybe Word16)
+  , _contextPart :: !(Maybe Word8)
+  , _contextPattern :: !(Maybe Word8)
   } deriving (Show, Eq)
 
 emptyContext :: Context
@@ -123,17 +123,18 @@ voiceSceneEntries =
 
 trackParamEntries :: [Entry]
 trackParamEntries = do
-  i <- [1 .. 4]
-  j <- [ entry (OneR 0x00 0x1F) (oneV 0x00) ("freeEgTrackParam" ++ show i)
-       , entry (OneR 0x00 0x01) (oneV 0x00) ("freeEgTrackSceneSwitch" ++ show i)
-       ]
-  return j
+  i <- [1 .. 4] :: [Int]
+  let ret =
+        [ entry (OneR 0x00 0x1F) (oneV 0x00) ("freeEgTrackParam" ++ show i)
+        , entry (OneR 0x00 0x01) (oneV 0x00) ("freeEgTrackSceneSwitch" ++ show i)
+        ]
+  ret
 
 trackDataEntries :: [Entry]
 trackDataEntries = do
-  i <- [1 .. 4]
-  j <- [1 .. 192]
-  return $ entry (TwoR (OneR 0x00 0x01) (OneR 0x00 0x7F)) (twoV 0x0100) ("freeEgTrack" ++ show i ++ "Data" ++ show j)
+  i <- [1 .. 4] :: [Int]
+  j <- [1 .. 192] :: [Int]
+  pure $ entry (TwoR (OneR 0x00 0x01) (OneR 0x00 0x7F)) (twoV 0x0100) ("freeEgTrack" ++ show i ++ "Data" ++ show j)
 
 voiceFreeEgEntries :: [Entry]
 voiceFreeEgEntries =
@@ -145,8 +146,8 @@ voiceFreeEgEntries =
 
 multiply :: Int -> Entry -> [Entry]
 multiply lim e = do
-  i <- [1 .. lim]
-  return $ e { _entryName = _entryName e ++ show i }
+  i <- [1 .. lim] :: [Int]
+  pure $ e { _entryName = _entryName e ++ show i }
 
 voiceStepSeqEntries :: [Entry]
 voiceStepSeqEntries =
@@ -234,7 +235,7 @@ getEntries' modelId address =
     (Word7 model8) = modelId
 
 getEntries :: DxUnion -> Maybe (Context, [Entry])
-getEntries (DPC m) = Nothing
-getEntries (DBD m) = Nothing
+getEntries (DPC _) = Nothing
+getEntries (DBD _) = Nothing
 getEntries (D2PC m) = getEntries' (_d2pcModel m) (_d2pcAddr m)
 getEntries (D2BD m) = getEntries' (_d2bdModel m) (_d2bdAddr m)

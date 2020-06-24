@@ -1,10 +1,6 @@
+.stack-work/
+dist/
+dist-newstyle/
+*~
 *.swo
 *.swp
-*~
-*.pyc
-*.o
-*.tmp
-*.log
-*.bak
-.stack-work
-

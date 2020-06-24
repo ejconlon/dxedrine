@@ -2,8 +2,8 @@ module Dxedrine.Words where
 
 import Data.Binary.Get
 import Data.Binary.Put
-import Data.Bits ((.|.), (.&.), shiftL, shiftR)
-import Data.Word (Word8(..), Word16(..))
+import Data.Bits (shiftL, shiftR, (.&.), (.|.))
+import Data.Word (Word16, Word8)
 
 newtype Word7 = Word7 { unWord7 :: Word8 } deriving (Show, Eq)
 

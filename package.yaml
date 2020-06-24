@@ -1,0 +1,58 @@
+name:                dxedrine
+version:             0.1.0
+github:              "ejconlon/dxedrine"
+author:              "Eric Conlon"
+maintainer:          "ejconlon@gmail.com"
+license:             BSD3
+license-file:        LICENSE
+copyright:           "2020 Eric Conlon"
+category:            Music
+synopsis:            A Yamaha DX200 patch editor
+
+extra-source-files:
+- README.md
+
+description: Please see the README on GitHub at <https://github.com/ejconlon/dxedrine#readme>
+
+dependencies:
+- base >=4.12 && <5
+- aeson
+- binary
+- bytestring >=0.10 && <1
+
+ghc-options:
+- -Wall
+- -Wcompat
+- -Widentities
+- -Wincomplete-record-updates
+- -Wincomplete-uni-patterns
+- -Wpartial-fields
+- -Wredundant-constraints
+- -fno-warn-unused-top-binds
+
+library:
+  source-dirs: src
+
+executables:
+  dxedrine-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - dxedrine
+
+tests:
+  dxedrine-test:
+    main:                Main.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - dxedrine
+    - tasty
+    - tasty-hunit

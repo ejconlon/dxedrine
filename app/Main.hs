@@ -1,9 +1,9 @@
-module Main where
+module Main (main) where
 
+import Control.Monad (forM_, unless)
+import Control.Monad.IO.Class (MonadIO (..))
 import Data.Binary
 import qualified Data.ByteString.Lazy as BL
-import Control.Monad (forM_, unless)
-import Control.Monad.IO.Class (MonadIO(..))
 import Dxedrine.Blocks
 import Dxedrine.Model
 import Dxedrine.Parsing
@@ -23,7 +23,7 @@ main = do
   forM_ unions $ \x -> do
     case getEntries x of
       Nothing -> return ()
-      Just p@(context, entries) ->
+      Just (context, entries) ->
         putStrLn $ show (x, context, entries)
   putStrLn "done"
   return ()
