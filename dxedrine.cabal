@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 80152c75c9dfa6ed22d1a39d4d020942c85dc191c508ba686f76540a19dbd163
+-- hash: be90bb8cfddbdad8e7b3b0806c8bebbfe37c1ac6585573666a485569378e8c0b
 
 name:           dxedrine
 version:        0.1.0
@@ -29,9 +29,11 @@ source-repository head
 library
   exposed-modules:
       Dxedrine.Blocks
+      Dxedrine.CliMain
       Dxedrine.Hlists
       Dxedrine.Model
       Dxedrine.Parsing
+      Dxedrine.UiMain
       Dxedrine.Words
   other-modules:
       Paths_dxedrine
@@ -39,10 +41,11 @@ library
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -fno-warn-unused-top-binds
   build-depends:
-      aeson
+      aeson >=1.4 && <2
     , base >=4.12 && <5
-    , binary
+    , binary >=0.8 && <1
     , bytestring >=0.10 && <1
+    , threepenny-gui >=0.9 && <1
   default-language: Haskell2010
 
 executable dxedrine-exe
@@ -53,11 +56,12 @@ executable dxedrine-exe
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -fno-warn-unused-top-binds -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson
+      aeson >=1.4 && <2
     , base >=4.12 && <5
-    , binary
+    , binary >=0.8 && <1
     , bytestring >=0.10 && <1
     , dxedrine
+    , threepenny-gui >=0.9 && <1
   default-language: Haskell2010
 
 test-suite dxedrine-test
@@ -69,11 +73,12 @@ test-suite dxedrine-test
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -fno-warn-unused-top-binds -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson
+      aeson >=1.4 && <2
     , base >=4.12 && <5
-    , binary
+    , binary >=0.8 && <1
     , bytestring >=0.10 && <1
     , dxedrine
     , tasty
     , tasty-hunit
+    , threepenny-gui >=0.9 && <1
   default-language: Haskell2010
